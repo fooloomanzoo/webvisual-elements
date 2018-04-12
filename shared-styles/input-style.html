@@ -21,6 +21,7 @@
         color: transparent;
       }
       .button > input[type],
+      .input > input:-webkit-autofill,
       .input > input {
         font-size: 1em;
         font-weight: 400;
@@ -117,23 +118,23 @@
       }
       /* Label: valid state */
       .input > input:focus + .decorator > label {
-        -webkit-transform: translate3d(0px, -3em, 0px) scale(0.75, 0.75);
-        transform: translate3d(0px, -3em, 0px) scale(0.75, 0.75);
+        -webkit-transform: translate3d(0px, -2.5em, 0px) scale(0.75, 0.75);
+        transform: translate3d(0px, -2.5em, 0px) scale(0.75, 0.75);
         opacity: 1;
       }
       .input > input:not(:placeholder-shown) + .decorator > label {
-        -webkit-transform: translate3d(0px, -3em, 0px) scale(0.75, 0.75);
-        transform: translate3d(0px, -3em, 0px) scale(0.75, 0.75);
+        -webkit-transform: translate3d(0px, -2.5em, 0px) scale(0.75, 0.75);
+        transform: translate3d(0px, -2.5em, 0px) scale(0.75, 0.75);
         opacity: 1;
       }
       _:-ms-lang(x), .input > input + .decorator > label {
-        -webkit-transform: translate3d(0px, -3em, 0px) scale(0.75, 0.75);
-        transform: translate3d(0px, -3em, 0px) scale(0.75, 0.75);
+        -webkit-transform: translate3d(0px, -2.5em, 0px) scale(0.75, 0.75);
+        transform: translate3d(0px, -2.5em, 0px) scale(0.75, 0.75);
         opacity: 1;
       }
       .input > input:optional:-moz-ui-valid + .decorator > label {
-        -webkit-transform: translate3d(0px, -3em, 0px) scale(0.75, 0.75);
-        transform: translate3d(0px, -3em, 0px) scale(0.75, 0.75);
+        -webkit-transform: translate3d(0px, -2.5em, 0px) scale(0.75, 0.75);
+        transform: translate3d(0px, -2.5em, 0px) scale(0.75, 0.75);
         opacity: 1;
       }
       /* Range */
@@ -186,27 +187,27 @@
       }
       /* Error label */
       .input > input:not(:focus):not(:placeholder-shown):invalid + .decorator > label {
-        -webkit-transform: translate3d(0px, -3em, 0px) scale(0.75, 0.75);
-        transform: translate3d(0px, -3em, 0px) scale(0.75, 0.75);
+        -webkit-transform: translate3d(0px, -2.5em, 0px) scale(0.75, 0.75);
+        transform: translate3d(0px, -2.5em, 0px) scale(0.75, 0.75);
         opacity: 1;
         color: var(--input-invalid, #dd2c00);
       }
       .input > input:not(:focus):-moz-ui-invalid:invalid + .decorator > label {
-        -webkit-transform: translate3d(0px, -3em, 0px) scale(0.75, 0.75);
-        transform: translate3d(0px, -3em, 0px) scale(0.75, 0.75);
+        -webkit-transform: translate3d(0px, -2.5em, 0px) scale(0.75, 0.75);
+        transform: translate3d(0px, -2.5em, 0px) scale(0.75, 0.75);
         opacity: 1;
         color: var(--input-invalid, #dd2c00);
       }
       .input > input[aria-invalid='true']:not(:valid) + .decorator > label {
-        -webkit-transform: translate3d(0px, -3em, 0px) scale(0.75, 0.75);
-        transform: translate3d(0px, -3em, 0px) scale(0.75, 0.75);
+        -webkit-transform: translate3d(0px, -2.5em, 0px) scale(0.75, 0.75);
+        transform: translate3d(0px, -2.5em, 0px) scale(0.75, 0.75);
         opacity: 1;
         color: var(--input-invalid, #dd2c00);
       }
       /* Valid label */
       .input > input:not(:focus):required:valid + .decorator > label {
-        -webkit-transform: translate3d(0px, -3em, 0px) scale(0.75, 0.75);
-        transform: translate3d(0px, -3em, 0px) scale(0.75, 0.75);
+        -webkit-transform: translate3d(0px, -2.5em, 0px) scale(0.75, 0.75);
+        transform: translate3d(0px, -2.5em, 0px) scale(0.75, 0.75);
         opacity: 1;
       }
       .input > input[type="color"] {

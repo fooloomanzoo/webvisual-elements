@@ -87,7 +87,7 @@
 
           <section class="input">
             <iron-icon class="left" icon="more-horiz"></iron-icon>
-            <input id="password" required autocomplete="current-password" pattern=".{6,64}" name="password" autocorrect="off" autocapitalize="off" spellcheck="off" placeholder$="{{localize('login', 'password')}}" type="password">
+            <input id="password" required autocomplete="password" pattern=".{1,128}" name="password" autocorrect="off" autocapitalize="off" spellcheck="off" placeholder$="{{localize('login', 'password')}}" type="password">
             <div class="decorator" error-message$="{{localize('login', 'invalid-password')}}" aria-hidden="true">
               <label>{{localize('login', 'password')}}</label>
               <div class="underline"></div>
