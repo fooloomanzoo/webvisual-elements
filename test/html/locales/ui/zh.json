@@ -1,0 +1,52 @@
+{
+  "home": {
+    "name": "测量​设备",
+    "title": "测量​设备"
+  },
+  "login": {
+    "name": "登录",
+    "title": "請登錄",
+    "username": "用户名",
+    "password": "密码",
+    "invalid-username": "无效的用户名",
+    "invalid-password": "无效的密码。",
+    "logout": "退出",
+    "confirm": "证实",
+    "reset": "复归"
+  },
+  "groups": {
+    "name": "分批"
+  },
+  "list": {
+    "name": "目录"
+  },
+  "detail": {
+    "name": "細部",
+    "query": "询问"
+  },
+  "menu": "菜单",
+  "settings": "构型",
+  "view": "图示",
+  "layout": "版式",
+  "language": "语言",
+  "group by": "分类",
+  "dark": {
+    "true": "黑",
+    "false": "亮"
+  },
+  "plain": {
+    "true": "平",
+    "false": "視窗系統"
+  },
+  "notification": {
+    "offline": {
+      "true": "離線",
+      "false": "線上"
+    },
+    "loggedIn":  {
+      "true": "登入",
+      "false": "您尚未登录"
+    },
+    "loaded": "加載完成"
+  }
+}

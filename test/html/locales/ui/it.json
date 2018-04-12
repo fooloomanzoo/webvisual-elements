@@ -1,0 +1,52 @@
+{
+  "home": {
+    "name": "Impianto di Misurazione",
+    "title": "Seleziona uno impianto di misurazione"
+  },
+  "login": {
+    "name": "Log In",
+    "title": "Accedi",
+    "username": "Nome utente",
+    "password": "Password",
+    "invalid-username": "Nome utente non valido",
+    "invalid-password": "Password non valida",
+    "logout": "Termina la sessione",
+    "confirm": "Confermare",
+    "reset": "Resettare"
+  },
+  "groups": {
+    "name": "Gruppo"
+  },
+  "list": {
+    "name": "Serie"
+  },
+  "detail": {
+    "name": "Dettagli",
+    "query": "Interrogazione"
+  },
+  "menu": "Menù",
+  "settings": "Impostazione",
+  "view": "Veduta",
+  "layout": "Menabò",
+  "language": "Lingua",
+  "group by": "Ordinare dare",
+  "dark": {
+    "true": "cupo scheme a colori",
+    "false": "chiaro scheme a colori"
+  },
+  "plain": {
+    "true": "appiattita presentazione",
+    "false": "presentazione a finestra"
+  },
+  "notification": {
+    "offline": {
+      "true": "Non in linea",
+      "false": "In linea"
+    },
+    "loggedIn":  {
+      "true": "Sei connesso",
+      "false": "Ora sei disconnesso"
+    },
+    "loaded": "caricato"
+  }
+}

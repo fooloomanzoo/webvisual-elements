@@ -1,0 +1,371 @@
+<script>
+  window.WebvisualMixins = window.WebvisualMixins || {};
+  /**
+   * Mixin that adds functionality to assign to socket and adds exceed events
+   *
+   * @mixinFunction
+   * @polymer
+   */
+  WebvisualMixins.DeviceMixin = function(superClass) {
+
+    return class extends superClass {
+
+      constructor() {
+        super();
+      }
+
+      static get properties() {
+        return {
+
+          item: {
+            type: Object
+          },
+
+          values: {
+            type: Array,
+            value: function() {
+              return [];
+            }
+          },
+
+          isExceeding: {
+            type: Boolean,
+            value: false
+          },
+
+          hasExceeded: {
+            type: Boolean,
+            value: false
+          },
+
+          storeInside: {
+            type: Boolean
+          },
+
+          viewLength: {
+            type: Number,
+            value: 1
+          },
+
+          valueKey: {
+            type: String,
+            value: 'y'
+          },
+
+          noLink: {
+            type: Boolean,
+            value: false
+          },
+
+          _initialized: {
+            type: Boolean
+          },
+
+          isDevice: {
+            type: Boolean,
+            value: true,
+            reflectToAttribute: true,
+            readOnly: true
+          }
+
+        }
+      }
+
+      static get observers() {
+        return [
+          '_exceedingChanged(isExceeding)',
+          '_hasExceededChanged(hasExceeded)',
+          '_linkElement(item, noLink)'
+        ]
+      }
+
+      connectedCallback() {
+        super.connectedCallback();
+        this._linkElement(this.item, this.noLink);
+      }
+
+      disconnectedCallback() {
+        super.disconnectedCallback();
+        setTimeout(() => {
+          this.clearValues();
+          this._unlinkElement();
+        }, 0)
+      }
+
+      _linkElement(item, noLink) {
+        if (!(item && item.mount)) {
+          return;
+        }
+        if (this._olditem) {
+          if (item.mount === this._olditem.mount && !noLink) {
+            return;
+          }
+          this._unlinkElement(this._olditem);
+        }
+
+        if (noLink) {
+          this._unlinkElement(item);
+          return;
+        }
+
+        // setTimeout(() => {
+          if (window.Webvisual && window.Webvisual.assignElement) {
+            window.Webvisual.assignElement(this);
+
+          this._olditem = item;
+          if (this._initialized) {
+            this.clearValues();
+            this.reset();
+          }
+
+          this.requestValues(null, null, this.viewLength)
+            .then(data => {
+              for (let mount in data) {
+                if (mount === this.item.mount) {
+                  this.insertValues(data[mount]);
+                  break;
+                }
+              }
+            })
+            .catch(err => {
+              if (err) {
+                console.log(err);
+              }
+            });
+          }
+        // }, 0)
+      }
+
+      _unlinkElement(item) {
+        item = item || this.item || this._olditem;
+        setTimeout(() => {
+          if (window.Webvisual && Webvisual.retractElement && item && item.mount) {
+            window.Webvisual.retractElement(this, item);
+            this._olditem = null;
+          }
+        }, 0)
+      }
+
+      getElement() {
+        return this.properties;
+      }
+
+      computeDate(x) {
+        return x ? (Math.abs(Date.now() - x) < 864E5 ? new Date(x).toLocaleTimeString() : new Date(x).toLocaleString()) : '';
+      }
+
+      computeValue(y) {
+        return (this.item && this.item.isIndicatorLamp) ? (this.checkExceedingState(y) ? '✗' : '✓') : y;
+      }
+
+      insertValues(values, len) {
+        if (values === undefined) {
+          return;
+        }
+
+        len = len || this.viewLength;
+
+        // len = (len && isFinite(len) && len <= values.length) ? len : ( (this.viewLength && isFinite(this.viewLength) && this.viewLength <= values.length) ? this.viewLength : values.length );
+
+        if (!this._initialized)
+          this._initialized = true;
+
+        if (!len) {
+          // if (this.item && this.item.exceedable === true) {
+          //   values.forEach(value => {
+          //     this.checkExceedingState(value);
+          //   })
+          // }
+          if (this.storeInside) {
+            this.values = this.values.concat(values);
+          }
+          // console.log(this.values);
+          this.renderInsertedValues(values);
+        } else {
+          const tmp = values.slice(values.length - len, values.length);
+          // if (this.item && this.item.exceedable === true) {
+          //   tmp.forEach(value => {
+          //     this.checkExceedingState(value);
+          //   })
+          // }
+          if (this.storeInside) {
+            this.values = this.values.concat(tmp);
+          }
+          this.renderInsertedValues(tmp);
+          tmp.length = 0;
+        }
+        values.length = 0;
+      }
+
+      spliceValues(splices) {
+        if (splices) {
+          if (this.storeInside === true) {
+            this.values = this.values.filter(v => {
+              return splices.indexOf(v) === -1;
+            })
+            this.notifyPath('values');
+            // this.splice('values', 0, splices.length);
+          }
+          if (this.renderSplicedValues) {
+            this.renderSplicedValues(splices);
+          }
+        }
+      }
+
+      resetValues(values) {
+        this.values = values;
+        this.notifyPath('values');
+        this.renderInsertedValues(this.values);
+      }
+
+      clearValues() {
+        this.values = [];
+        this.notifyPath('values');
+      }
+
+      requestValues(start, end, len) {
+        if (!(this.item && this.item.mount)) {
+          return new Promise((resolve, reject) => {
+            reject();
+          })
+        }
+        len = len || this.viewLength || 1;
+        const req = {
+          target: 'cache',
+          operation: 'request',
+          args: {
+            mounts: [this.item.mount],
+            from: null,
+            to: null,
+            length: len || 1
+          }
+        };
+
+        if (window.Webvisual) {
+          return new Promise((resolve) => {
+            window.Webvisual.request(req, resolve);
+          })
+        } else {
+          return new Promise((resolve, reject) => {
+            if (this.values)
+              resolve(this.values.slice(this.values.length - len, this.values.length))
+            else {
+              reject();
+            }
+          });
+        }
+      }
+
+      requestRange(key) {
+        if (!(this.item && this.item.mount)) {
+          return new Promise((resolve) => {
+            resolve( [ undefined, undefined ] );
+          })
+        }
+        const req = {
+          target: 'cache',
+          operation: 'range',
+          forced: true,
+          args: {
+            mounts: [this.item.mount],
+            key: key
+          }
+        };
+
+        if (!this.storeInside && window.Webvisual) {
+          return new Promise( (resolve) => {
+            window.Webvisual.request(req, resolve);
+          })
+        } else {
+          return new Promise( (resolve) => {
+            if (this.values && this.values.length) {
+              const min = this.min(this.values, key);
+              const max = this.max(this.values, key);
+              if (!(min === undefined && max === undefined)) {
+                resolve( [ min, max ] );
+              }
+            }
+            resolve( [ undefined, undefined ] );
+          });
+        }
+      }
+
+      min(array, key) { // inspired by d3.array
+        let i = -1,
+            a,
+            b;
+        const n = array.length;
+        while (++i < n) if ((b = array[i][key]) !== null && b >= b) { a = b; break; }
+        while (++i < n) if ((b = array[i][key]) !== null && a > b) a = b;
+        return a;
+      }
+
+      max(array, key) { // inspired by d3.array
+        let i = -1,
+            a,
+            b;
+        const n = array.length;
+        while (++i < n) if ((b = array[i][key]) !== null && b >= b) { a = b; break; }
+        while (++i < n) if ((b = array[i][key]) !== null && a < b) { a = b; }
+        return a;
+      }
+
+      renderInsertedValues() {}
+
+      renderSplicedValues() {}
+
+      renderClearing() {}
+
+      checkExceedingState(value) {
+        if (!(this.item && this.item.exceedable === true && value !== undefined && value[this.valueKey] !== undefined && value[this.valueKey] !== null)) return 0;
+
+        let state = 0;
+  			if (value[this.valueKey] < this.item.threshold.from)
+  				state = -1;
+  			else if (value[this.valueKey] > this.item.threshold.to)
+  				state = 1;
+
+        if (state === 0) {
+          if (this.isExceeding === true) {
+            this.isExceeding = false;
+          }
+        } else {
+          if (this.isExceeding !== true) {
+            this.isExceeding = true;
+            if (this.hasExceeded === false)
+              this.set('hasExceeded', true);
+          }
+        }
+
+        return state;
+      }
+
+      _exceedingChanged(isExceeding) {
+        if (this.item && this.item.exceedable === true) {
+          this.dispatchEvent(new CustomEvent('exceeding', {
+            bubbles: true,
+            composed: true,
+            detail: {
+              item: this.item,
+              value: isExceeding
+            }
+          }));
+        }
+      }
+
+      _hasExceededChanged() {}
+
+      reset() {
+        if (this.resetColor)
+          this.resetColor();
+        if (super.reset) {
+          super.reset();
+        }
+        this.isExceeding = false;
+        this.hasExceeded = false;
+        this._initialized = false;
+        this.renderClearing();
+      }
+    }
+  }
+</script>

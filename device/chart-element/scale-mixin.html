@@ -1,0 +1,203 @@
+<script>
+  window.WebvisualMixins = window.WebvisualMixins || {};
+  /**
+   * Mixin that adds a scale function using d3 to an element
+   *
+   * @mixinFunction
+   * @polymer
+   */
+  WebvisualMixins.ScaleMixin = function(superClass) {
+
+    return class extends superClass {
+
+      constructor() {
+        super();
+
+        this._bisectDate = d3.bisector((d, v) => {
+          return d.x - v;
+        });
+
+        this._bisectValue = d3.bisector((d, v) => {
+          return d.y - v;
+        });
+      }
+
+      static get properties() {
+        return {
+          /**
+           * scaling time for each coordinate
+           */
+          scalingX: {
+            type: String,
+            value: 'time'
+          },
+
+          scalingY: {
+            type: String,
+            value: 'linear'
+          },
+          /**
+           * tick count each coordinate
+           */
+          ticksX: {
+            type: Number,
+            value: 10
+          },
+
+          ticksY: {
+            type: Number,
+            value: 10
+          },
+          /**
+           * scale base for each coordinate (only available for 'pow' or 'log')
+           * e.g. :  Math.E
+           */
+          scaleBaseX: {
+            type: Number
+          },
+
+          scaleBaseY: {
+            type: Number
+          },
+
+          /**
+           * the computed objects of scale functions for each key
+           */
+          scaleX: {
+            type: Function,
+            computed: '_computeScaleFn(scalingX, scaleBaseX, "x")',
+          },
+
+          scaleY: {
+            type: Function,
+            computed: '_computeScaleFn(scalingY, scaleBaseY, "y")',
+          },
+
+          /**
+           * domain to scale for each coordinate
+           * e.g. : [1000000, 5000000]
+           */
+          domainX: {
+            type: Array
+          },
+
+          domainY: {
+            type: Array
+          },
+
+          /**
+           * pixel-whise range for coordinate
+           * e.g. :
+           *  x: [0, width=500],
+           *  y: [height=300, 0]
+           */
+          rangeX: {
+            type: Array
+          },
+
+          rangeY: {
+            type: Array
+          }
+        }
+      }
+
+      static get observers() {
+        return [
+          '_domainXChanged(domainX)',
+          '_domainYChanged(domainY)',
+          '_rangeXChanged(rangeX)',
+          '_rangeYChanged(rangeY)',
+          '_scaleXChanged(scaleX)',
+          '_scaleYChanged(scaleY)'
+        ]
+      }
+
+      // prevent scale and others from calling on null or undefined
+      _domainXChanged(domainX) {
+        if (domainX === undefined || this.scaleX === undefined || domainX.some(e => { return e === undefined || e === null; })) return;
+        if (this._IS_LOG_SCALE(this.scalingX) && domainX[0] <= 0) {
+          this.scaleX.domain([Number.Epsilon, domainX[1]]);
+        } else {
+          this.scaleX.domain(domainX);
+        }
+      }
+
+      _domainYChanged(domainY) {
+        if (domainY === undefined || this.scaleY === undefined || domainY.some(e => { return e === undefined || e === null; })) return;
+        if (this._IS_LOG_SCALE(this.scalingY) && domainY[0] <= 0) {
+          this.scaleY.domain([Number.Epsilon, domainY[1]]);
+        } else {
+          this.scaleY.domain(domainY);
+        }
+        this.scaleY.nice();
+      }
+
+      _rangeXChanged(rangeX) {
+        if (rangeX === undefined || this.scaleX === undefined || rangeX.some(e => { return e === undefined || e === null; })) return;
+        this.scaleX.range(rangeX);
+      }
+
+      _rangeYChanged(rangeY) {
+        if (rangeY === undefined || this.scaleY === undefined || rangeY.some(e => { return e === undefined || e === null; })) return;
+        this.scaleY.range(rangeY).nice();
+      }
+
+      _scaleXChanged(scaleX) {
+        if (scaleX === undefined) {
+          return;
+        }
+      }
+
+      _scaleYChanged(scaleY) {
+        if (scaleY === undefined) {
+          return;
+        }
+      }
+
+      _computeScaleFn(scale, base, key) {
+        if (scale === undefined) return;
+
+        const fn = (scale === 'time' ? d3.scaleTime() :
+            scale === 'ln' ? d3.scaleLog().base(Math.E) :
+            scale === 'log' ? d3.scaleLog().base(base || 10) :
+            scale === 'log₂' ? d3.scaleLog().base(2) :
+            scale === 'log₁₀' ? d3.scaleLog().base(10) :
+            scale === '√' ? d3.scalePow().exponent(0.5) :
+            scale === 'pow' ? d3.scalePow().exponent(base || 1) :
+            d3.scaleLinear());
+
+        if (key === 'x') {
+          fn.ticks(this.ticksX || 10);
+          if (this.domainX) {
+            fn.domain(this.domainX);
+          }
+          if (this.rangeX) {
+            fn.range(this.rangeX);
+          }
+        } else if (key === 'y') {
+          fn.ticks(this.ticksY || 10);
+          if (this.domainY) {
+            fn.domain(this.domainY);
+          }
+          if (this.rangeY) {
+            fn.range(this.rangeY);
+          }
+          fn.nice();
+        }
+        return fn;
+      }
+
+      static get _VALID_SCALES() {
+        return ['time', 'ln', 'log', 'log₂', 'log₁₀', '√', 'pow'];
+      }
+
+      _SCALE_USES_BASE(scale) {
+        return scale === 'log' || scale === 'pow';
+      }
+
+      _IS_LOG_SCALE(scale) {
+        return ['ln', 'log', 'log₂', 'log₁₀'].indexOf(scale) > -1;
+      }
+    }
+  }
+</script>

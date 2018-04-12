@@ -1,0 +1,452 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../bower_components/paper-ripple/paper-ripple.html">
+<link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../mixins/localize-mixin.html">
+<link rel="import" href="../components/icon-button.html">
+<link rel="import" href="../components/dialog-element.html">
+<link rel="import" href="../shared-styles/input-style.html">
+<link rel="import" href="../shared-styles/button-style.html">
+
+<dom-module id="login-dialog">
+  <template strip-whitespace>
+    <style include="input-style button-style">
+      :host(:focus),
+      :host {
+        outline: none;
+      }
+      #signinform {
+        @apply --layout-vertical;
+        font-size: 1em;
+        padding: 1em 0 0;
+        overflow: hidden;
+      }
+      .usercard {
+        @apply --layout-horizontal;
+        @apply --layout-center-center;
+        padding: 0.75em 1em;
+        margin: 0.5em 0;
+        background: rgba(0,0,0,0.1);
+      }
+      iron-icon {
+        margin-right: 0.5em;
+      }
+      .input:not(:last-of-type) {
+        margin-bottom: 1.5em;
+      }
+      .input:last-of-type {
+        margin-bottom: 1em;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      .buttons {
+        padding-top: 0.5em;
+      }
+      .button:first-of-type {
+        margin-left: 0;
+      }
+      .button {
+        padding: 0.75em 0.5em;
+      }
+      .button > .left {
+        margin-right: 0.5em;
+      }
+      [dialog-title] > * {
+        font-size: 1.1em;
+      }
+      [dialog-title] > *:first-child:not(:only-child) {
+        font-size: 1.25em;
+        font-weight: 500;
+        margin-bottom: 0.9em;
+      }
+      [dialog-title] > *:not(:first-child) {
+        font-weight: initial;
+      }
+      [dialog-title] > *:only-child {
+        font-size: 1em;
+        font-weight: initial;
+      }
+    </style>
+
+    <dialog-element id="dialog">
+      <template is="dom-if" if="[[!loggedIn]]">
+        <div dialog-title id="loginInfo">
+          <div>{{localize('login', 'name')}}</div>
+          <div>{{localize('login', 'title')}}</div>
+        </div>
+
+        <form dialog-content id="signinform" on-submit="onSubmit" method="POST">
+          <section class="input">
+            <iron-icon class="left" icon="person-add"></iron-icon>
+            <input id="username" autocomplete="username" name="username" type="text" pattern=".{1,32}\..{1,32}" autocorrect="off" autocapitalize="off" spellcheck="off" placeholder$="{{localize('login', 'username')}}" required>
+            <div class="decorator" error-message$="{{localize('login', 'invalid-username')}}" aria-hidden="true">
+              <label>{{localize('login', 'username')}}</label>
+              <div class="underline"></div>
+            </div>
+          </section>
+
+          <section class="input">
+            <iron-icon class="left" icon="more-horiz"></iron-icon>
+            <input id="password" required autocomplete="current-password" pattern=".{6,64}" name="password" autocorrect="off" autocapitalize="off" spellcheck="off" placeholder$="{{localize('login', 'password')}}" type="password">
+            <div class="decorator" error-message$="{{localize('login', 'invalid-password')}}" aria-hidden="true">
+              <label>{{localize('login', 'password')}}</label>
+              <div class="underline"></div>
+            </div>
+          </section>
+
+          <div class="buttons">
+            <div class="button" on-click="onReset">
+              <paper-ripple></paper-ripple>
+              <iron-icon class="left" icon="close"></iron-icon>
+              <input type="reset" value$="{{localize('login', 'reset')}}"/>
+            </div>
+            <div class="button" on-click="onSubmit">
+              <paper-ripple></paper-ripple>
+              <iron-icon class="left" icon="juelich:logo"></iron-icon>
+              <input type="submit" value$="{{localize('login', 'confirm')}}"/>
+            </div>
+          </div>
+        </form>
+      </template>
+
+      <template is="dom-if" if="[[loggedIn]]">
+        <div dialog-title>
+          <div>{{localize('notification', 'loggedIn', loggedIn)}}</div>
+        </div>
+        <div dialog-content>
+          <div class="usercard">
+            <iron-icon class="left" icon="person"></iron-icon>
+            <span>{{userProfile.username}}</span>
+          </div>
+        </div>
+
+        <div dialog-bottom class="buttons">
+          <div class="button" on-click="signOut">
+            <paper-ripple></paper-ripple>
+            <iron-icon class="left" icon="person-outline"></iron-icon>
+            {{localize('login', 'logout')}}
+          </div>
+        </div>
+      </template>
+    </dialog-element>
+
+  </template>
+
+  <script>
+    class LoginDialog extends WebvisualMixins.LocalizeMixin(Polymer.Element) {
+
+      static get is() {
+        return 'login-dialog'
+      }
+
+      static get properties() {
+        return {
+          opened: {
+            type: Boolean,
+            reflectToAttribute: true,
+            notify: true,
+            observer: '_openedChanged'
+          },
+
+          userProfile: {
+            type: Object
+          },
+
+          signInUrl: {
+            type: String,
+            value: '/login'
+          },
+
+          signOutUrl: {
+            type: String,
+            value: '/logout'
+          },
+
+          localesUrlPrefix: {
+            type: String,
+            value: '/locales/ui/'
+          },
+
+          loggedIn: {
+            type: Boolean,
+            value: false,
+            notify: true
+          },
+
+          offline: {
+            type: Boolean,
+            value: !window.navigator.onLine,
+            notify: true
+          }
+        }
+      }
+
+      connectedCallback() {
+        super.connectedCallback();
+        this.autoSignIn = this.autoSignIn.bind(this);
+        this.autoSignIn('silent');
+        window.addEventListener('online', this.autoSignIn);
+        window.addEventListener('offline', this.autoSignIn);
+      }
+
+      // _load() {
+      //   super._load();
+      //   if (this.offline || this.loggedIn) {
+      //     return;
+      //   }
+      //   this.autoSignIn('silent');
+      //   requestAnimationFrame(() => {
+      //     window.addEventListener('online', this.autoSignIn);
+      //     this.$.dialog.center();
+      //   });
+      // }
+
+      /*
+       * Let users sign-in without typing credentials
+       * @param  {Boolean} unmediated Determines if user mediation is required.
+       * @return {Promise} Resolves if credential info is available.
+       */
+      autoSignIn(mediation) {
+        let req, p;
+        mediation = (['silent', 'optional', 'required'].indexOf(mediation) === -1) ? 'silent' : mediation;
+        if (navigator.credentials) {
+          // Actual Credential Management API call to get credential object
+          if (navigator.credentials && navigator.credentials.preventSilentAccess !== undefined) {
+            req = { password: true, mediation: mediation };
+          } else {
+            req = { password: true, unmediated: mediation !== 'optional' };
+          }
+          p = navigator.credentials.get(req)
+            .then(cred => {
+              if (cred && cred.type === 'password') {
+                // console.log('auto sign-in performed');
+                // If `password` is `undefined`, this API is older version
+                // which means this is Chrome 51 - 59
+                if (cred.password === undefined) {
+                  // cred.idName = 'username';
+                  return this.signIn.call(this, this.signInUrl, cred);
+                // If `password` is not `undefined`, this API is new version
+                // which means this is Chrome 60 or later
+                } else {
+                  let form = new FormData();
+                  form.append('username', cred.id);
+                  form.append('password', cred.password);
+                  return this.signIn.call(this, this.signInUrl, 'include', form);
+                }
+              } else {
+                console.log('auto sign-in not performed');
+                // Fallback to server to check, if session-cookies are valid
+                return this.signIn.call(this, '/auth');
+              }
+            })
+            .catch(this.notSignedIn.bind(this));
+        } else {
+          // Resolve if Credential Management API is not available
+          // Fallback to server to check, if session-cookies are valid
+          console.log('auto sign-in not available');
+          p = this.signIn.call(this, '/auth');
+        }
+        Promise.resolve(p)
+          .then(profile => {
+            // When auto sign-in didn't resolve with a profile
+            // it's failed to get credential information.
+            if (!profile) {
+              if (this.loggedIn || window._loggedIn) {
+                this.dispatchEvent(new CustomEvent('announce', {
+                  detail: this.localize ? this.localize('notification', 'loggedIn', false) : 'You are not signed in',
+                  bubbles: true,
+                  composed: true
+                }));
+              }
+              this.loggedIn = false;
+              window._loggedIn = false;
+              this.dispatchEvent(new CustomEvent('announce', {
+                detail: this.localize ? this.localize('notification', 'loggedIn', false) : 'You are not signed in',
+                bubbles: true,
+                composed: true
+              }));
+            } else {
+              this.dispatchEvent(new CustomEvent('announce', {
+                detail: this.localize ? this.localize('notification', 'loggedIn', true) : 'You are signed in',
+                bubbles: true,
+                composed: true
+              }));
+            }
+          })
+          .catch(err => {
+            if (err) console.log(err);
+            this.dispatchEvent(new CustomEvent('announce', {
+              detail: this.localize ? this.localize('notification', 'loggedIn', false) : 'You are not signed in',
+              bubbles: true,
+              composed: true
+            }));
+            if (!this.offline) {
+              this.open();
+            }
+          });
+      }
+
+      /*
+       * When password sign-in button is pressed.
+       * @return {void}
+       */
+      onSubmit(e) {
+        e.preventDefault();
+
+        const signinForm = this.root.querySelector('#signinform');
+
+        if (signinForm.validate && !signinForm.validate()) return;
+
+        if (!signinForm.elements.username.value || !signinForm.elements.password.value) {
+          this.notSignedIn.call(this, 401, 'password or username are empty');
+          return;
+        }
+
+        // Sign-In
+        this.signIn(this.signInUrl, 'include', new FormData(signinForm))
+          .then(() => {
+            if (navigator.credentials) {
+              const cred = new PasswordCredential(signinForm);
+              navigator.credentials.store(cred).then(() => {
+                console.info('credentials are stored');
+              });
+            }
+            this.dispatchEvent(new CustomEvent('announce', {
+              detail: this.localize ? this.localize('notification', 'loggedIn', true) : 'You are signed in',
+              bubbles: true,
+              composed: true
+            }));
+          }, () => {
+            // Polymer event to notice user that 'Authentication failed'.
+            this.loggedIn = false;
+            this.dispatchEvent(new CustomEvent('announce', {
+              detail: this.localize ? this.localize('notification', 'loggedIn', false) : 'You are not signed in',
+              bubbles: true,
+              composed: true
+            }));
+            if (!this.offline) {
+              this.open();
+            }
+          });
+      }
+
+      onReset() {
+        this.root.querySelector('#username').value = '';
+        this.root.querySelector('#password').value = '';
+      }
+
+      /*
+       * Let user sign-in using id/password
+       * @param  {CredentialObject} cred FormData or CredentialObject
+       * @return {Promise} Returns result of `noCredApiSignIn()`
+       */
+      signIn(url, cred, formData) {
+        return this._fetch(url, 'POST', cred || 'include', 'json', null, null, false, formData)
+          .then(this.signedIn.bind(this))
+          .catch(this.notSignedIn.bind(this));
+      }
+
+      /**
+       * Let user sign-out
+       * @param  {CredentialObject} cred FormData or CredentialObject
+       * @return {Promise} Returns result of `noCredApiSignIn()`
+       */
+      signOut() {
+        // POST-ing credential object will be converted to FormData object
+        return this._fetch(this.signOutUrl, 'POST', 'include', 'json', null, false, false, JSON.stringify(this.userProfile))
+          .then(() => {
+            if (navigator.credentials) {
+              navigator.credentials.requireUserMediation && navigator.credentials.requireUserMediation();
+              navigator.credentials.preventSilentAccess && navigator.credentials.preventSilentAccess();
+            }
+            this.loggedIn = false;
+            this.userProfile = null;
+            if (!this.offline) {
+              this.open();
+            }
+          })
+          .catch(this.notSignedIn.bind(this));
+      }
+
+      /**
+       * User is signed in. Fill user info.
+       * @param  {Object} profile Profile information object
+       * @return {Promise} Resolves when authentication succeeded.
+       */
+      signedIn(profile) {
+        if (profile && profile.username) {
+          window._loggedIn = this.loggedIn = true;
+          this.userProfile = {
+            username: profile.username
+          };
+          window.dispatchEvent(new CustomEvent('logged-in', {
+            detail: this.loggedIn,
+            bubbles: true,
+            composed: true
+          }));
+          return Promise.resolve(profile);
+        } else {
+          return Promise.reject();
+        }
+      }
+
+      notSignedIn(err) {
+        console.warn('not signed in', err);
+        let status = '';
+        if (this.loggedIn || window._loggedIn) {
+          window.dispatchEvent(new CustomEvent('logged-in', {
+            detail: this.loggedIn,
+            bubbles: true,
+            composed: true
+          }));
+          this.dispatchEvent(new CustomEvent('announce', {
+            detail: status ? status : '',
+            bubbles: true,
+            composed: true
+          }));
+          const usernameInput = this.root.querySelector('#username');
+          const passwordInput = this.root.querySelector('#password');
+          if (usernameInput) {
+            usernameInput.value = '';
+          }
+          if (passwordInput) {
+            passwordInput.value = '';
+          }
+          if (err && err.statusCode) {
+            if (err.statusCode >= 400 && err.statusCode < 500) {
+              status = 'Login with Server failed';
+            } else if (err.statusCode >= 500 && err.statusCode < 600) {
+              status = 'Server-Error occured';
+            } else {
+              status = 'Unknown Error occured';
+            }
+          }
+          this.loggedIn = false;
+          window._loggedIn = false;
+        }
+        if (!this.offline) {
+          this.open();
+        }
+      }
+
+      _openedChanged(opened) {
+        if (opened === true) {
+          this.open();
+        } else {
+          this.close();
+        }
+      }
+
+      open() {
+        this.$.dialog.open();
+        this.opened = true;
+      }
+      close() {
+        this.$.dialog.close();
+        this.opened = false;
+      }
+    }
+    customElements.define(LoginDialog.is, LoginDialog);
+  </script>
+
+</dom-module>

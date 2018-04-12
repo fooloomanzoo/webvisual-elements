@@ -1,0 +1,60 @@
+<link rel="import" href="login-dialog.html">
+
+<script>
+  if (!window.WebvisualLoginDialog) {
+    window.WebvisualLoginDialog = document.createElement('login-dialog');
+    document.body.appendChild(window.WebvisualLoginDialog);
+  }
+
+  window.WebvisualMixins = window.WebvisualMixins || {};
+  /**
+   * Mixin adds retry strategies for offline and login changes for reloading data
+   *
+   * @mixinFunction
+   * @polymer
+   */
+  WebvisualMixins.AccessibilityMixin = function(superClass) {
+
+    return class extends superClass {
+
+      static get properties() {
+        return {
+          loggedIn: {
+            type: Boolean,
+            notify: true
+          },
+
+          offline: {
+            type: Boolean,
+            notify: true
+          }
+        }
+      }
+
+      connectedCallback() {
+        super.connectedCallback();
+        this._load = this._load.bind(this);
+        window.addEventListener('online', this._load);
+        window.addEventListener('offline', this._load);
+        window.addEventListener('logged-in', this._load);
+        this._load();
+      }
+
+      disconnectedCallback() {
+        super.connectedCallback();
+        window.removeEventListener('online', this._load);
+        window.removeEventListener('offline', this._load);
+        window.removeEventListener('logged-in', this._load);
+      }
+
+      _load() {
+        this.offline = !Boolean(window.navigator.onLine);
+        this.loggedIn = Boolean(window._loggedIn);
+      }
+
+      _openLoginDialog() {
+        window.WebvisualLoginDialog.open();
+      }
+    }
+  }
+</script>

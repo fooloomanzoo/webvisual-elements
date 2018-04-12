@@ -1,0 +1,275 @@
+<script>
+  window.WebvisualMixins = window.WebvisualMixins || {};
+  /**
+   * Mixin that listens for select and exceed Events
+   *
+   * @mixinFunction
+   * @polymer
+   */
+  WebvisualMixins.ContainerMixin = function(superClass) {
+
+    return class extends superClass {
+
+      constructor() {
+        super();
+      }
+
+      static get properties() {
+        return {
+          isContainer: {
+            type: Boolean,
+            value: true,
+            reflectToAttribute: true,
+            readOnly: true
+          },
+
+          opened: {
+            type: Boolean,
+            notify: true
+          },
+
+          openOnSelect: {
+            type: Boolean
+          },
+
+          openOnExceed: {
+            type: Boolean
+          },
+
+          forceOpened: {
+            type: Boolean
+          },
+
+          isExceeding: {
+            type: Boolean,
+            notify: true
+          },
+
+          selectNotify: {
+            type: Boolean
+          },
+
+          exceedNotify: {
+            type: Boolean
+          },
+
+          multi: {
+            type: Boolean
+          },
+
+          noAutoRemovalExceedings: {
+            type: Boolean
+          },
+
+          autoClose: {
+            type: Number,
+            value: 60000
+          },
+
+          item: {
+            type: Object,
+            value: function() {
+              return {};
+            },
+            notify: true
+          },
+
+          items: {
+            type: Array,
+            value: function() {
+              return [];
+            },
+            notify: true
+          },
+
+          // selectedItemIndex: {
+          //   type: Number,
+          //   notify: true
+          // },
+
+          exceeding: {
+            type: Array,
+            value: function() {
+              return [];
+            },
+            notify: true
+          }
+        }
+      }
+
+      connectedCallback() {
+        super.connectedCallback();
+        this._watchSelect(this.selectNotify, this.openOnSelect);
+        this._watchExceed(this.exceedNotify, this.openOnExceed);
+      }
+
+      disconnectedCallback() {
+        super.disconnectedCallback();
+        this._watchSelect();
+        this._watchExceed();
+      }
+
+      _watchSelect(selectNotify, openOnSelect) {
+        if (selectNotify || openOnSelect) {
+          this.addEventListener('item-select', this._select);
+          this.addEventListener('clear-selected-items', this.clearItems);
+        } else {
+          this.removeEventListener('item-select', this._select);
+          this.removeEventListener('clear-selected-items', this.clearItems);
+        }
+      }
+
+      _watchExceed(exceedNotify, openOnExceed) {
+        if (exceedNotify || openOnExceed) {
+          this.addEventListener('exceeding', this._setExceeding);
+          this.addEventListener('clear-exceeding-items', this.clearExceedings);
+        } else {
+          this.removeEventListener('exceeding', this._setExceeding);
+          this.removeEventListener('clear-exceeding-items', this.clearExceedings);
+        }
+      }
+
+      _select(e) {
+        if (e && e.detail && e.detail.item && Object.keys(e.detail.item).length) {
+          if (e.detail.value === true)
+            this.select(e.detail.item);
+          else
+            this.deselect(e.detail.item);
+        }
+      }
+
+      select(item) {
+        this.set('item', item); // store nevertheless the multi option the last selected Element
+        if (this.multi === true) {
+          if (this.indexOf(this.items, item) === -1) {
+            this.push('items', item);
+          }
+        }
+        this.opened = this.forceOpened ||
+          Boolean((this.openOnSelect && (this.item || (this.items && this.items.length))) ||
+            (this.openOnExceed && (this.exceeding && this.exceeding.length)));
+        // this.notifyPath('item');
+        // this.notifyPath('items');
+      }
+
+
+      deselect(item) {
+        if (this.multi) {
+          const pos = this.indexOf(this.items, item);
+          if (pos !== -1) {
+            this.splice('items', pos, 1);
+          }
+          if (this.items.length === 0) {
+            this.set('item', null);
+            // this.set('selectedItemIndex', -1);
+          } else if (this.indexOf(this.items, this.item) === -1) {
+            this.set('item', this.items[0]);
+          }
+        } else {
+          this.set('item', null);
+        }
+
+        this.opened = this.forceOpened ||
+          Boolean((this.openOnSelect && (this.item || (this.items && this.items.length))) ||
+            (this.openOnExceed && (this.exceeding && this.exceeding.length)));
+        // this.notifyPath('item');
+        // this.notifyPath('items');
+      }
+
+      clearItems() {
+        this.set('item', null);
+        this.splice('items', 0, this.items.length);
+
+        if (this._activeCloseTimeout) {
+          clearTimeout(this._activeCloseTimeout);
+          this._activeCloseTimeout = null;
+        }
+
+        this.opened = this.forceOpened ||
+          Boolean(this.opened && this.openOnExceed && (this.exceeding && this.exceeding.length));
+      }
+
+      // _selectedItemIndexChanged(index) {
+      //   if (this.item && index >= 0 && index < this.item.length && this.indexOf(this.items, this.item) !== index) {
+      //     this.set('item', this.items[index]);
+      //     console.warn(index);
+      //   }
+      // }
+
+      _setExceeding(e) {
+        if (e && e.detail && e.detail.item) {
+          if (e.detail.value === true)
+            this.setExceeding(e.detail.item);
+          else
+            this.unsetExceeding(e.detail.item);
+        }
+      }
+
+      setExceeding(item) {
+        const pos = this.indexOf(this.exceeding, item);
+        if (pos === -1)
+          this.push('exceeding', item);
+
+        this.isExceeding = (this.exceeding.length > 0) ? true : false;
+
+        if (this._activeCloseTimeout) {
+          clearTimeout(this._activeCloseTimeout);
+          this._activeCloseTimeout = null;
+        }
+        this.opened = this.forceOpened ||
+          Boolean((this.openOnSelect && (this.item || (this.items && this.items.length))) ||
+            (this.openOnExceed && (this.exceeding && this.exceeding.length)));
+      }
+
+      unsetExceeding(item) {
+        if (this.noAutoRemovalExceedings === true) return;
+        const pos = this.indexOf(this.exceeding, item);
+        if (pos !== -1)
+          this.splice('exceeding', pos, 1);
+
+        this.isExceeding = (this.exceeding.length > 0) ? true : false;
+
+        const opened = this.forceOpened ||
+          Boolean((this.openOnSelect && (this.item || (this.items && this.items.length))) ||
+            (this.openOnExceed && (this.exceeding && this.exceeding.length)));
+
+        if (!opened) {
+          if (this._activeCloseTimeout) {
+            clearTimeout(this._activeCloseTimeout);
+            this._activeCloseTimeout = null;
+          }
+          this._activeCloseTimeout = setInterval(function() {
+            this.opened = false;
+          }.bind(this), this.autoClose || 0)
+        }
+      }
+
+      clearExceedings() {
+        this.splice('exceeding', 0, this.exceeding.length);
+        this.isExceeding = false;
+
+        if (this._activeCloseTimeout) {
+          clearTimeout(this._activeCloseTimeout);
+          this._activeCloseTimeout = null;
+        }
+
+        this.opened = this.forceOpened ||
+          Boolean(this.opened && this.openOnSelect && (this.item || (this.items && this.items.length)));
+      }
+
+      _handleExceeding() {}
+
+      indexOf(items, item) {
+        if (item && item.mount && items) {
+          if (Array.isArray(items)) {
+            for (let i = 0; i < items.length; i++) {
+              if (item.mount === items[i].mount)
+                return i;
+            }
+          }
+        }
+        return -1;
+      }
+    }
+  }
+</script>

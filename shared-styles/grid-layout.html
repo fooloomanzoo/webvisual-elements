@@ -1,0 +1,97 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<dom-module id="grid-layout">
+  <template>
+    <style>
+      .grid {
+        @apply --layout-horizontal;
+        @apply --layout-wrap;
+        @apply --layout-start-justified;
+        margin: 0.2em 0.4em 0.4em 0.4em;
+        padding: 0;
+        list-style: none;
+        box-sizing: border-box;
+        overflow: hidden;
+        flex: 1;
+      }
+      .grid li {
+        @apply --layout-vertical;
+        @apply --layout-wrap;
+        @apply --layout-start-justified;
+        -webkit-flex: 1 1;
+        flex: 1 1;
+        box-sizing: border-box;
+        -webkit-flex-basis: 20%;
+        flex-basis: 20%;
+        max-width: 20%;
+        padding: 0.25em;
+        pointer-events: auto;
+      }
+      :host(:not([plain])) .grid li > * {
+        border-radius: 10px;
+        box-shadow: 0 4px 5px 0 rgba(0, 0, 0, 0.14),
+                    0 1px 10px 0 rgba(0, 0, 0, 0.12),
+                    0 2px 4px -1px rgba(0, 0, 0, 0.4);
+        border-color: var(--grid-border-color, rgba(0,0,0,0.5));
+      }
+      :host([plain]) .grid li > * {
+        border-radius: 6px;
+        box-shadow: none;
+        border: none;
+      }
+      .grid a {
+        text-decoration: none;
+      }
+      device-caption {
+        flex: 1 0;
+        -webkit-flex-basis: auto;
+        flex-basis: auto;
+      }
+      @media (min-width: 1981px) {
+        .grid li {
+          -webkit-flex-basis: 20%;
+          flex-basis: 20%;
+          max-width: 20%;
+        }
+      }
+      @media (max-width: 1980px) {
+        .grid li {
+          -webkit-flex-basis: 25%;
+          flex-basis: 25%;
+          max-width: 25%;
+        }
+      }
+      @media (max-width: 1600px) {
+        .grid li {
+          -webkit-flex-basis: 33.3%;
+          flex-basis: 33.3%;
+          max-width: 33.3%;
+        }
+      }
+      @media (max-width: 767px) {
+        .grid {
+          margin-left: 0.25em;
+          margin-right: 0.25em;
+        }
+        .grid li {
+          -webkit-flex-basis: 50%;
+          flex-basis: 50%;
+          max-width: 50%;
+        }
+      }
+      @media (max-width: 520px) {
+        .grid li {
+          -webkit-flex-basis: 100%;
+          flex-basis: 100%;
+          max-width: 100%;
+        }
+      }
+
+      .grid li:only-of-type {
+        -webkit-flex-basis: 100%;
+        flex-basis: 100%;
+        max-width: 100%;
+      }
+    </style>
+  </template>
+</dom-module>

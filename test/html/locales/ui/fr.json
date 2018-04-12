@@ -1,0 +1,52 @@
+{
+  "home": {
+    "name": "Installation de Mesure",
+    "title": "Choisissez une installation de mesure, s'il vous plaît"
+  },
+  "login": {
+    "name": "Connectez",
+    "title": "Connectez, s'il vous plaît",
+    "username": "Nom d'utilisateur",
+    "password": "Mot de passe",
+    "invalid-username": "Nom d'utilisateur non valable",
+    "invalid-password": "Mot de passe non valable",
+    "logout": "Déconnexion",
+    "confirm": "Authentifier",
+    "reset": "Reculer"
+  },
+  "groups": {
+    "name": "Groupe"
+  },
+  "list": {
+    "name": "Liste"
+  },
+  "detail": {
+    "name": "Details",
+    "query": "Interrogation"
+  },
+  "menu": "Menu",
+  "settings": "Paramètres",
+  "view": "Affichage",
+  "layout": "Mise en Page",
+  "language": "Langue",
+  "group by": "Arrangez",
+  "dark": {
+    "true": "schéma-encreur foncé",
+    "false": "schéma-encreur clair"
+  },
+  "plain": {
+    "true": "présentation méplate",
+    "false": "presentation de fenêtrage"
+  },
+  "notification": {
+    "offline": {
+      "true": "Vous avez débranché",
+      "false": "Vous avez en ligne"
+    },
+    "loggedIn":  {
+      "true": "Vous avez connecté",
+      "false": "Vous avez déconnecté"
+    },
+    "loaded": "charge"
+  }
+}

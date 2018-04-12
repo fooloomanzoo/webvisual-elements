@@ -1,0 +1,52 @@
+<!--
+Modification from element in Polymer Shop Demo App
+-->
+
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="ripple-container.html">
+
+<dom-module id="tab-element">
+  <template strip-whitespace>
+    <style>
+      :host {
+        display: inline-block;
+        position: relative;
+        cursor: pointer;
+      }
+      [hidden] {
+          display: none !important;
+      }
+      #overlay {
+        pointer-events: none;
+        display: none;
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        @apply --tab-overlay;
+      }
+
+      #container {
+        height: 100%;
+        width: 100%;
+        position: relative;
+      }
+
+      :host(.tabs-overlay-static-above) #overlay {
+        display: block;
+      }
+    </style>
+    <div id="overlay"></div>
+    <ripple-container id="container">
+      <slot></slot>
+    </ripple-container>
+  </template>
+  <script>
+    class TabElement extends Polymer.Element {
+      static get is() { return 'tab-element'; }
+    }
+
+    customElements.define(TabElement.is, TabElement);
+  </script>
+</dom-module>

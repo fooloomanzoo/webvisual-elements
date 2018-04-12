@@ -1,0 +1,409 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../bower_components/iron-pages/iron-pages.html">
+<link rel="import" href="../../bower_components/iron-selector/iron-selector.html">
+
+<link rel="import" href="../shared-styles/control-style.html">
+<link rel="import" href="../components/icon-button.html">
+<link rel="import" href="chart-element/device-chart.html">
+<link rel="import" href="table-element/device-table-group.html">
+<link rel="import" href="svg-element/device-svg.html">
+<link rel="import" href="container-mixin.html">
+
+<dom-module id='group-card'>
+  <template strip-whitespace>
+    <style include="control-style">
+      :host {
+        display: block;
+        position: relative;
+        -webkit-touch-callout: none; -webkit-tap-highlight-color:rgba(0,0,0,0);
+        background: var(--group-card-background, #ebebeb);
+        --group-card-header-height: 3em;
+      }
+      #header {
+        @apply --layout-fit;
+        -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;
+        height: var(--group-card-header-height);
+        border-top-left-radius: inherit;
+        border-top-right-radius: inherit;
+        color: var(--group-card-header-color, var(--bright-text-color));
+        transition-property: color;
+        transition-duration: 500ms;
+        transition-timing-function: cubic-bezier(0.6,0,0.2,1);
+      }
+      #header.opened {
+        height: calc(15vh + 120px);
+        color: var(--group-card-header-opened-color, --primary-text-color);
+      }
+      #title {
+        @apply --layout-fit;
+        @apply --layout-inline;
+        @apply --layout-center;
+        @apply --layout-justified;
+        bottom: auto;
+        pointer-events: none;
+        height: var(--group-card-header-height);
+        width: 100%;
+        mix-blend-mode: exclusion;
+      }
+      #title > * {
+        pointer-events: all;
+      }
+      #title > .title-text {
+        margin-left: 1em;
+        font-size: 1.1em;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        cursor: pointer;
+        padding-top: 0.0825em; /** small refining **/
+      }
+      #title > .expand-button {
+        margin-right: 0.5em;
+        flex-shrink: 0;
+      }
+      #title:hover .expand-button {
+        opacity: 1;
+      }
+      #mainContent {
+        @apply --layout-horizontal;
+        @apply --layout-wrap;
+        @apply --layout-start;
+        @apply --layout-start-justified;
+        pointer-events: none;
+        border-color: inherit;
+        border-radius: inherit;
+        position: relative;
+        box-sizing: border-box;
+      }
+      #headerBackground {
+        position: relative;
+        min-height: var(--group-card-header-height);
+        box-sizing: border-box;
+        width: 100%;
+        border-top-left-radius: inherit;
+        border-top-right-radius: inherit;
+        border-bottom-style: solid;
+        border-bottom-width: thin;
+        border-color: transparent;
+        color: var(--group-card-header-color, var(--bright-text-color));
+        background-color: var(--group-card-header-background, var(--bright-primary-color));
+        padding-top: var(--group-card-header-height);
+        transition-property: padding-top, background-color, border-color;
+        transition-duration: 500ms;
+        transition-timing-function: cubic-bezier(0.6,0,0.2,1);
+      }
+      #headerBackground.opened {
+        bottom: 0;
+        padding-top: calc(15vh + 120px);
+        color: var(--group-card-header-opened-color, var(--bright-text-color));
+        background-color: var(--group-card-header-opened-background, tranparent);
+        border-color: var(--group-card-header-border, currentColor);
+      }
+      #headerBackground:not(.opened)::before {
+        @apply --layout-fit;
+        content: '';
+        border-top-left-radius: inherit;
+        border-top-right-radius: inherit;
+        pointer-events: none;
+        background: var(--group-card-header-shim);
+      }
+      ::slotted(*) {
+        pointer-events: auto;
+      }
+      #addons {
+        @apply --layout-fit;
+        transform-style: preserve-3d;
+        -webkit-transform-style: preserve-3d;
+        transform-origin: top center;
+        transform: rotateX(90deg) scale(0.5);
+        transition-property: transform;
+        transition-duration: 500ms;
+        transition-timing-function: cubic-bezier(0.6,0,0.2,1);
+      }
+      #addons.opened {
+        transform: rotateX(0deg) scale(1);
+      }
+      #addons > * {
+        @apply --layout-fit;
+        background: transparent;
+      }
+      #headerContent {
+        @apply --layout-fit;
+        isolation: isolate;
+        -webkit-perspective: 50vmin;
+        perspective: 50vmin;
+        -webkit-perspective-origin: center top;
+        -moz-perspective-origin: center top;
+        perspective-origin: center top;
+      }
+      #control {
+        position: absolute;
+        transition-property: opacity;
+        transition-duration: 500ms;
+        transition-timing-function: cubic-bezier(0.6, 0, 0.2, 1);
+        pointer-events: none;
+        visibility: hidden;
+        opacity: 0;
+      }
+      #control.opened {
+        visibility: visible;
+        opacity: 1;
+      }
+      device-table-group[opened] {
+        margin-top: calc(var(--group-card-header-height) - 0.1em);
+        margin-left: 0;
+        margin-bottom: calc(var(--control-icon-size-fine, var(--icon-size)) + 2*var(--control-icon-padding-fine, var(--icon-padding)));
+        margin-right: 0;
+        --table-background: rgba(255,255,255,0.5);
+      }
+      device-chart {
+        --options-scrim-background: transparent;
+      }
+      device-chart[opened] {
+        margin-top: calc(var(--group-card-header-height) - 0.1em);
+        padding-bottom: calc(var(--control-icon-size-fine, var(--icon-size)) + 2*var(--control-icon-padding-fine, var(--icon-padding)));
+      }
+      @media (-moz-touch-enabled: 1), (pointer: coarse) { /* touch */
+        device-chart[opened] {
+          padding-bottom: calc(var(--control-icon-size-coarse, var(--icon-size)) + 2*var(--control-icon-padding-coarse, var(--icon-padding)));
+        }
+        device-table-group[opened] {
+          margin-bottom: calc(var(--control-icon-size-coarse, var(--icon-size)) + 2*var(--control-icon-padding-coarse, var(--icon-padding)));
+        }
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+    </style>
+
+    <section id="mainContent">
+      <section id="headerBackground"></section>
+      <slot></slot>
+    </section>
+
+    <section id="header">
+      <section id="headerContent">
+        <iron-pages id="addons" selected="[[view]]" selectable=".view" selected-attribute="opened">
+          <template is="dom-if" if="[[svgSrcPath]]">
+            <device-svg class="view"
+              url-prefix="[[svgUrlPrefix]]"
+              src="[[svgSrcPath]]"
+              selectable="[[svgSelectable]]"
+              items="[[items]]"
+              multi
+              exceeding="[[exceeding]]"></device-svg>
+          </template>
+          <template is="dom-if" if="[[_shouldRenderExtensions]]">
+            <device-chart class="view"
+              multi
+              margin='{"left": 5, "right": 5, "top": 0, "bottom": 0}'
+              items="[[items]]"></device-chart>
+            <device-table-group class="view"
+              items="[[items]]" selected-mount="[[item.mount]]"></device-table-group>
+          </template>
+        </iron-pages>
+
+        <section id="title">
+          <span class="title-text" on-click="toggle">[[title]]</span>
+          <icon-button title="expand" on-click="toggle" class="expand-button" icon="[[expandIcon]]"></icon-button>
+        </section>
+
+        <section id="control" class="left bottom">
+          <iron-selector selected="{{view}}" selectable=".button">
+            <template is="dom-if" if="[[svgSrcPath]]">
+              <icon-button title="map" icon="map" class="button" hidden$="[[!svgSrcPath]]"></icon-button>
+            </template>
+            <template is="dom-if" if="[[_shouldRenderExtensions]]">
+              <icon-button title="chart" icon="show-chart" class="button" hidden$="[[!_shouldRenderExtensions]]"></icon-button>
+              <icon-button title="table" icon="list" class="button" hidden$="[[!_shouldRenderExtensions]]"></icon-button>
+            </template>
+          </iron-selector>
+        </section>
+      </section>
+    </section>
+  </template>
+
+  <script>
+    class GroupCard extends WebvisualMixins.ContainerMixin(Polymer.Element) {
+
+      static get is() {
+        return 'group-card';
+      }
+
+      static get properties() {
+        return {
+          title: {
+            type: String,
+            value: '',
+            reflectToAttribute: true
+          },
+
+          opened: {
+            type: Boolean,
+            reflectToAttribute: true,
+            observer: '_openedChanged'
+          },
+
+          expandIcon: {
+            type: String,
+            value: 'unfold-more',
+            computed: '_computeExpandIcon(opened)'
+          },
+
+          svgUrlPrefix: {
+            type: String
+          },
+
+          svgSrcPath: {
+            type: String
+          },
+
+          svgSelectable: {
+            type: Object
+          },
+
+          view: {
+            type: Number,
+            value: 0,
+            observer: '_viewChanged'
+          },
+
+          transitionDuration: {
+            type: Number,
+            value: 500,
+            observer: '_transitionDurationChanged'
+          },
+
+          _shouldRenderExtensions: {
+            type: Boolean,
+            computed: '_computeShouldRenderExtensions(items.length)'
+          },
+
+          _state: {
+            type: Number,
+            value: 0
+          }
+        }
+      }
+
+      toggle() {
+        if (!this.opened) {
+          this.open();
+        } else {
+          this.close();
+        }
+      }
+
+      open() {
+        this._state = this._STATE.OPENING;
+        this._transitionStart();
+      }
+
+      close() {
+        this._state = this._STATE.CLOSING;
+        this._transitionStart();
+      }
+
+      _openedChanged(opened, old) {
+        if (old === undefined) {
+          this.view = 0;
+        }
+        if (opened && this._state !== this._STATE.OPENING) {
+          this.open();
+        } else if (opened === false && this._state !== this._STATE.CLOSING) {
+          this.close();
+        }
+      }
+
+      _resetTransitionState() {
+        requestAnimationFrame(() => {
+          this.$.control.style['will-change'] = '';
+          this.$.control.style['transition'] = 'none';
+          this.$.addons.style['will-change'] = '';
+          this.$.headerBackground.style['will-change'] = '';
+          this.$.headerBackground.style['transition'] = 'none';
+          this.$.control.classList.remove('opened');
+          this.$.addons.classList.remove('opened');
+          this.$.header.classList.remove('opened');
+          this.$.headerBackground.classList.remove('opened');
+          this.$.addons.style['display'] = 'none';
+          this.opened = false;
+          this._state = this._STATE.STATIC;
+        });
+      }
+
+      _transitionStart() {
+        requestAnimationFrame(() => {
+          this.$.addons.style['display'] = '';
+          this.$.addons.style['will-change'] = 'transform';
+          requestAnimationFrame(() => {
+            this.$.headerBackground.style['transition'] = '';
+            this.$.headerBackground.style['will-change'] = 'padding-top';
+            if (this._state === this._STATE.OPENING) {
+              this.$.addons.classList.add('opened');
+              this.$.header.classList.add('opened');
+              this.$.headerBackground.classList.add('opened');
+            } else if (this._state === this._STATE.CLOSING) {
+              this.$.control.classList.remove('opened');
+              this.$.addons.classList.remove('opened');
+              this.$.headerBackground.classList.remove('opened');
+            }
+            // ensure that the transition will end
+            setTimeout(() => {
+              this._transitionEnd();
+            }, this.transitionDuration)
+          });
+        });
+      }
+
+      _transitionEnd() {
+        requestAnimationFrame(() => {
+          if (this._state === this._STATE.CLOSING) {
+            this.$.addons.style['display'] = 'none';
+            this.$.header.classList.remove('opened');
+            this.opened = false;
+          } else if (this._state === this._STATE.OPENING) {
+            this.$.control.classList.add('opened');
+            this.opened = true;
+            this._viewChanged();
+          }
+          this.$.addons.style['will-change'] = '';
+          this.$.headerBackground.style['will-change'] = '';
+          this._state = this._STATE.STATIC;
+        });
+      }
+
+      _transitionDurationChanged(transitionDuration) {
+        const timing = transitionDuration + 'ms';
+        this.$.headerBackground.style['transition-duration'] = timing;
+        this.$.addons.style['transition-duration'] = timing;
+        this.$.control.style['transition-duration'] = timing;
+      }
+
+      _computeExpandIcon(opened) {
+        return opened ? 'unfold-less' : 'unfold-more';
+      }
+
+      _computeShouldRenderExtensions(length) {
+        return length > 0;
+      }
+
+      _viewChanged() {
+        if (this.opened && this.$.addons.selectedItem && this.$.addons.selectedItem.notifyResize) {
+          this.$.addons.selectedItem.notifyResize();
+        }
+      }
+
+      get _STATE() {
+        return {
+          STATIC: 0,
+          OPENING: 1,
+          CLOSING: 2
+        }
+      }
+    }
+    customElements.define(GroupCard.is, GroupCard);
+  </script>
+</dom-module>

@@ -1,0 +1,98 @@
+{
+  "login": {
+    "name": "Login",
+    "title": "Bitte melden Sie sich an",
+    "username": "Benutzername",
+    "password": "Kennwort",
+    "invalid-username": "ungültiger Benutzername",
+    "invalid-password": "ungültiges Kennwort",
+    "logout": "Abmelden",
+    "confirm": "Bestätigen",
+    "reset": "Zurücksetzen"
+  },
+  "home": {
+    "name": "Auswahl",
+    "title": "Auswahl der Messanlage",
+    "empty configuration": "Keine Einstellungen gefunden"
+  },
+  "groups": {
+    "name": "Gruppen"
+  },
+  "list": {
+    "name": "Liste"
+  },
+  "detail": {
+    "name": "Details",
+    "query": "Abfrage"
+  },
+  "menu": "Menü",
+  "settings": "Einstellungen",
+  "view": "Ansicht",
+  "layout": "Darstellung",
+  "language": "Anzeigesprache",
+  "group by": "Gruppierung",
+  "dark": {
+    "true": "dunkles Farbschema",
+    "false": "helles Farbschema"
+  },
+  "plain": {
+    "true": "ebene Darstellung",
+    "false": "Fensterdarstellung"
+  },
+  "notification": {
+    "offline": {
+      "true": "Sie sind offline",
+      "false": "Sie sind online"
+    },
+    "loggedIn": {
+      "true": "Sie sind angemeldet",
+      "false": "Sie sind nicht angemeldet"
+    },
+    "loaded": "geladen"
+  },
+  "options": "Optionen",
+  "save": "Speichern",
+  "style": "Darstellung",
+  "fit": "Einpassen",
+  "fullscreen": {
+    "true": "Vollbild beenden",
+    "false": "Vollbild aktivieren"
+  },
+  "reset-zoom": "Zoom zurücksetzen",
+  "chart": {
+    "export": "Exportieren",
+    "export-format": "Exportformat",
+    "interpolation": "Interpolation",
+    "quality": "Qualität",
+    "resolution": "Auflösung",
+    "height": "Höhe",
+    "width": "Breite",
+    "font-size": "Schriftgröße",
+    "font-color": "Schriftfarbe",
+    "line-color": "Linienfarbe",
+    "background-color": "Hintergrundfarbe",
+    "has-area": "Graph ist ausgefüllt",
+    "has-line": "Graph ist liniert",
+    "brush-to-zoom": "Zoom auf Achsen",
+    "show-info": "mit Info",
+    "show-legend": "mit Legende",
+    "auto-hide-focus": "",
+    "draggable": "Achsen sind verschiebbar",
+    "brushToZoom": "Zoom auf den Achsen",
+    "multi-axes": {
+      "x": "mehrere x-Achsen",
+      "y": "mehrere y-Achsen"
+    },
+    "scaling": {
+      "x": "x-Achsen-Skalierung",
+      "y": "y-Achsen-Skalierung",
+      "linear": "lineare Skalierung"
+    },
+    "modus": {
+      "description": "Punktmodus",
+      "hold": "Punkt fixieren",
+      "zoom": "Punkt zoomen",
+      "delta": "Punkt delta"
+    }
+  }
+}

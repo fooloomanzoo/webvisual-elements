@@ -1,0 +1,62 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<dom-module id="selectbox-style">
+  <template>
+    <style>
+      .selectbox {
+        @apply --layout-inline;
+        @apply --layout-center;
+        box-sizing: border-box;
+        word-break: break-all;
+        padding: 0.75em 1.5em;
+        -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;
+      }
+      .selectbox > * {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      .selectbox > span {
+        flex: 1 0 auto;
+        padding: 0.25em;
+        text-align: center;
+      }
+      .selectbox > iron-icon:first-child {
+        margin-right: 0.8em;
+      }
+      .selectbox > select {
+        padding: 0.5em;
+        font-size: 0.8em;
+        font-family: inherit;
+        text-align: center;
+        box-sizing: border-box;
+        outline: none;
+        color: var(--selectbox-color);
+        background-color: var(--selectbox-background, transparent);
+        border-color: var(--selectbox-border, var(--dark-primary-color));
+        border-radius: 3px;
+        border-width: thin;
+        border-style: solid;
+        opacity: 0.75;
+        will-change: opacity;
+        flex: 1 0 auto;
+        transition: opacity 0.25s cubic-bezier(0.6, 0, 0.1, 1);
+        cursor: pointer;
+        line-height: normal;
+      }
+      .selectbox > select:last-child:not(:only-child) {
+        margin-left: 0.8em;
+      }
+      .selectbox > select:focus,
+      .selectbox > select:hover {
+        opacity: 1;
+      }
+      .selectbox option {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: var(--option-color, #252525);
+        background: var(--option-background, #f1f1f1);
+      }
+    </style>
+  </template>
+</dom-module>

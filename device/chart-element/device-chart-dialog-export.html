@@ -1,0 +1,517 @@
+<link rel="import" href="../../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../../bower_components/iron-resizable-behavior/iron-resizable-behavior.html">
+<link rel="import" href="../../../bower_components/paper-ripple/paper-ripple.html">
+<link rel="import" href="../../../bower_components/iron-icon/iron-icon.html">
+
+<link rel="import" href="../../mixins/localize-mixin.html">
+
+<link rel="import" href="../../components/icon-button.html">
+<link rel="import" href="../../components/dialog-element.html">
+<link rel="import" href="../../components/drawer-element.html">
+
+<link rel="import" href="../../shared-styles/input-style.html">
+<link rel="import" href="../../shared-styles/button-style.html">
+<link rel="import" href="../../shared-styles/selectbox-style.html">
+
+<dom-module id="dialog-chart-export">
+  <template strip-whitespace>
+    <style include="input-style button-style selectbox-style">
+      :host {
+        outline: none;
+      }
+      #dialog {
+        border-radius: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+      }
+      #chartContainer {
+        display: block;
+        position: relative;
+        box-sizing: border-box;
+        margin: 0;
+        padding: 8px;
+        flex: 1 1 auto;
+        overflow: auto;
+      }
+      #chartContainer > * {
+        color: inherit;
+      }
+      #chartContainer > device-chart {
+        margin: 0;
+        padding: 0;
+        --chart-text-color: #000;
+        --chart-plot-background-opacity: 1;
+        height: 100%;
+        width: 100%;
+      }
+      #options {
+        position: absolute;
+        --drawer-width: 12em;
+        --drawer-background: rgba(255,255,255,0.5);
+        --drawer-scrim-background: rgba(0,0,0,0.25);
+        --drawer-content: {
+          padding: 0;
+        };
+      }
+      .options-content  {
+        color: var(--primary-text-color);
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        padding: 0.75em;
+        overflow-x: hidden;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      .options-content > * {
+        margin-top: 0;
+        margin-bottom: 0.5em;
+        text-align: left;
+        word-break: break-all;
+        flex-shrink: 0;
+        position: relative;
+        font-size: 0.8em;
+      }
+      .input {
+        background: rgba(255,255,255,0.5);
+      }
+      [hidden] {
+        display: none !important;
+      }
+    </style>
+
+    <dialog-element id="dialog" on-iron-overlay-opened="_setDimensions">
+      <div dialog-title>
+        <div>[[localize('chart', 'export')]]</div>
+      </div>
+      <div dialog-content horizontal>
+        <div id="chartContainer"></div>
+        <drawer-element id="options" opened$="{{styleOptionsOpened}}" scrim stretch align="right">
+          <div class="options-content">
+            <div class="selectbox">
+              <select value="{{exportFormat::change}}">
+                <option value="svg">.svg</option>
+                <option value="png">.png</option>
+                <option value="jpg">.jpg</option>
+              </select>
+              <span>[[localize('chart', 'export-format')]]</span>
+            </div>
+            <template is="dom-if" if="[[_nequals(exportFormat, 'svg')]]">
+              <div class="input">
+                <input type="range" min="0" max="1" step="0.01" value="{{quality::input}}">
+                <div class="decorator" error-message$=">= 0">
+                  <label>[[localize('chart', 'quality')]]</label>
+                </div>
+              </div>
+              <div class="input">
+                <input type="number" min="72" step="1" value="{{resolution::input}}">
+                <div class="decorator" error-message$=">= 0">
+                  <label>[[localize('chart', 'resolution')]]</label>
+                  <div class="underline"></div>
+                </div>
+              </div>
+            </template>
+            <div class="input">
+              <input type="number" min="0" step="1" value="{{height::input}}">
+              <div class="decorator" error-message$=">= 0">
+                <label>[[localize('chart', 'height')]]</label>
+                <div class="underline"></div>
+              </div>
+            </div>
+            <div class="input">
+              <input type="number" min="0" step="1" value="{{width::input}}">
+              <div class="decorator" error-message$=">= 0">
+                <label>[[localize('chart', 'width')]]</label>
+                <div class="underline"></div>
+              </div>
+            </div>
+            <div class="input">
+              <input type="number" min="1" step="1" value="{{fontSize::input}}">
+              <div class="decorator" error-message$=">= 0">
+                <label>[[localize('chart', 'font-size')]]</label>
+                <div class="underline"></div>
+              </div>
+            </div>
+            <div class="input">
+              <input type="color" value="{{fontColor::input}}">
+              <label>[[localize('chart', 'font-color')]]</label>
+            </div>
+            <div class="input">
+              <input type="color" value="{{backgroundColor::input}}">
+              <label>[[localize('chart', 'background-color')]]</label>
+            </div>
+            <div class="input">
+              <input type="color" value="{{lineColor::input}}">
+              <label>[[localize('chart', 'line-color')]]</label>
+            </div>
+          </div>
+        </drawer-element>
+      </div>
+      <div dialog-bottom class="buttons">
+        <div class="button" on-click="toggleOptions">
+          <paper-ripple></paper-ripple>
+          <iron-icon class="left" icon="tune"></iron-icon>
+          [[localize('options')]]
+        </div>
+        <div class="button" on-click="toggleStyleOptions">
+          <paper-ripple></paper-ripple>
+          <iron-icon class="left" icon="style"></iron-icon>
+          [[localize('style')]]
+        </div>
+        <div class="button" on-click="fitInContainer">
+          <paper-ripple></paper-ripple>
+          <iron-icon class="left" icon="aspect-ratio"></iron-icon>
+          [[localize('fit')]]
+        </div>
+        <div class="button" on-click="save">
+          <paper-ripple></paper-ripple>
+          <iron-icon class="left" icon="camera-alt"></iron-icon>
+          [[localize('save')]]
+        </div>
+      </div>
+    </dialog-element>
+  </template>
+
+  <script>
+    class DialogChartExport extends WebvisualMixins.LocalizeMixin(Polymer.mixinBehaviors(
+      [Polymer.IronResizableBehavior], Polymer.Element)) {
+
+      static get is() {
+        return 'dialog-chart-export'
+      }
+
+      static get properties() {
+        return {
+          opened: {
+            type: Boolean,
+            reflectToAttribute: true,
+            notify: true,
+            observer: '_openedChanged'
+          },
+
+          styleOptionsOpened: {
+            type: Boolean,
+            value: false
+          },
+
+          exportFormat: {
+            type: String,
+            value: 'svg'
+          },
+
+          resolution: {
+            type: Number,
+            value: 150
+          },
+
+          quality: {
+            type: Number,
+            value: 0.5
+          },
+
+          height: {
+            type: Number
+          },
+
+          width: {
+            type: Number
+          },
+
+          backgroundColor: {
+            type: String,
+            value: '#ffffff'
+          },
+
+          fontColor: {
+            type: String,
+            value: '#151515'
+          },
+
+          fontSize: {
+            type: Number,
+            value: 11
+          },
+
+          lineColor: {
+            type: String,
+            value: '#151515'
+          },
+
+          localesUrlPrefix: {
+            type: String,
+            value: '/locales/ui/'
+          }
+        }
+      }
+
+      static get observers() {
+        return [
+          '_setDimensions(height, width)',
+          '_styleChanged(backgroundColor, fontColor, lineColor, fontSize, showInfo, showLegend)'
+        ]
+      }
+
+      static get listeners() {
+        return {
+          'iron-resize': '_setDimensions'
+        };
+      }
+
+      constructor() {
+        super();
+        this.setChartElement(...arguments);
+      }
+
+      connectedCallback() {
+        super.connectedCallback();
+        this._isAttached = true;
+        this._attachChartElement();
+        this._getPPI();
+      }
+
+      setChartElement(chartElement) {
+        if (chartElement) {
+          if (this._chart) {
+            this._detachChartElement();
+          }
+          this._chart = chartElement.cloneNode(true);
+          this._chart.controlButtonsHidden = true;
+          this._chart.exportButtonDisabled = true;
+          this._chart.autoHideInfoDisabled = true;
+          this._chart.modus = 'hold';
+          this._chart.setAttribute('without-mixmode', true);
+          this._chart.set('items', chartElement.items);
+          if (this._isAttached === true) {
+            this._attachChartElement();
+          }
+        }
+      }
+
+      _attachChartElement() {
+        if (!this._chart) {
+          return;
+        }
+        Array.prototype.forEach.call(this.$.chartContainer.children, el => {
+          this.$.chartContainer.removeChild(el);
+        });
+        requestAnimationFrame(() => {
+          this.$.chartContainer.appendChild(this._chart);
+          this._chart._buildLayout();
+          const clip = this._chart._svg.node().querySelector('clipPath');
+          clip.setAttribute('id', 'clip-export'); // firefox brushing
+          Array.prototype.forEach.call(this._chart._svg.node().querySelectorAll('[clip-path]'), el => {
+            el.setAttribute('clip-path', 'url(#clip-export)');
+          })
+          setTimeout(() => {
+            this._styleChanged(this.backgroundColor, this.fontColor, this.lineColor, this.fontSize);
+            this.fitInContainer();
+          }, 100);
+        });
+      }
+
+      _detachChartElement() {
+        if (this._isAttached === true) {
+          if (this._chart && this._chart.parentElement)
+            this._chart.parentElement.removeChild(this._chart);
+        }
+      }
+
+      _setDimensions(height, width) {
+        if (!this._chart || this._isAttached !== true) {
+          return;
+        }
+        const bbox = this._chart.getBoundingClientRect();
+        if (typeof height !== 'number') {
+          height = bbox.height;
+        }
+        if (typeof width !== 'number') {
+          width = bbox.width;
+        }
+        if (height <= 0 || width <= 0) {
+          return;
+        }
+        this._chart.style.height = height + 'px';
+        this._chart.style.width = width + 'px';
+        this._chart.sizeLayout();
+      }
+
+      fitInContainer() {
+        if (!this._chart || this._isAttached !== true) {
+          return;
+        }
+        const bbox = this.$.chartContainer.getBoundingClientRect(),
+          pt = parseFloat(window.getComputedStyle(this.$.chartContainer).getPropertyValue('padding-top')),
+          pr = parseFloat(window.getComputedStyle(this.$.chartContainer).getPropertyValue('padding-right')),
+          pb = parseFloat(window.getComputedStyle(this.$.chartContainer).getPropertyValue('padding-bottom')),
+          pl = parseFloat(window.getComputedStyle(this.$.chartContainer).getPropertyValue('padding-left')),
+          mt = parseFloat(window.getComputedStyle(this.$.chartContainer).getPropertyValue('margin-top')),
+          mr = parseFloat(window.getComputedStyle(this.$.chartContainer).getPropertyValue('margin-right')),
+          mb = parseFloat(window.getComputedStyle(this.$.chartContainer).getPropertyValue('margin-bottom')),
+          ml = parseFloat(window.getComputedStyle(this.$.chartContainer).getPropertyValue('margin-left')),
+          height = Math.floor(bbox.height - mt - mb - pt - pb),
+          width = Math.floor(bbox.width - mr - ml - pr - pl);
+
+        if (height <= 0 || width <= 0) {
+          return;
+        }
+        this.height = height;
+        this.width = width;
+      }
+
+      _getPPI() {
+        let testDiv = document.createElement('div');
+        testDiv.style.cssText = 'height: 1in; left: -100%; position: absolute; top: -100%; width: 1in;';
+        document.body.insertBefore(testDiv, document.body.children[0]);
+        this._ppiX = testDiv.offsetWidth;
+        this._ppiY = testDiv.offsetHeight;
+        testDiv.parentElement.removeChild(testDiv);
+      }
+
+      toggleOptions() {
+        this._chart.toggleOptions();
+      }
+
+      toggleStyleOptions() {
+        this.styleOptionsOpened = !this.styleOptionsOpened;
+      }
+
+      _openedChanged(opened) {
+        if (opened === true) {
+          this.open();
+        } else {
+          this.close();
+        }
+      }
+
+      _nequals(a, b) {
+        return a != b;
+      }
+
+      open() {
+        this.$.dialog.open();
+        this.opened = true;
+      }
+
+      close() {
+        this.$.dialog.close();
+        this.opened = false;
+      }
+
+      _styleChanged(backgroundColor, fontColor, lineColor, fontSize) {
+        this._chart.updateStyles({ '--chart-plot-background-color': backgroundColor });
+        this._chart.updateStyles({ '--chart-line-color': lineColor });
+        this._chart.updateStyles({ '--chart-text-color': fontColor });
+        this._chart.updateStyles({ '--chart-text-size': fontSize + 'px' });
+      }
+
+      _applyStyleToElement(parent, orig) {
+        const children = parent.childNodes;
+        const origChildren = orig.childNodes;
+
+        const ContainerElements = ['svg', 'g'];
+        const RelevantStyles = {
+          'rect': ['fill', 'stroke', 'stroke-width'],
+          'path': ['fill', 'stroke', 'stroke-width'],
+          'circle': ['fill', 'stroke', 'fill-opacity', 'stroke-width'],
+          'line': ['stroke', 'stroke-width'],
+          'text': ['fill', 'font-size', 'font-family', 'letter-spacing', 'text-anchor', 'alignment-baseline', "stroke", "stroke-width", "stroke-opacity"]
+        };
+
+        for (let i = 0; i < children.length; i++) {
+          const child = children[i];
+          const tag = child.tagName;
+          if (ContainerElements.indexOf(tag) !== -1) {
+            this._applyStyleToElement(child, origChildren[i])
+          } else if (tag in RelevantStyles) {
+            const StyleDef = window.getComputedStyle(origChildren[i]);
+            for (let j = 0; j < RelevantStyles[tag].length; j++) {
+              child.setAttribute([RelevantStyles[tag][j]], StyleDef.getPropertyValue(RelevantStyles[tag][j]));
+            }
+          }
+        }
+      }
+
+      save() {
+        // https://stackoverflow.com/questions/28226677/save-inline-svg-as-jpeg-png-svg
+        // https://stackoverflow.com/questions/15181452/how-to-save-export-inline-svg-styled-with-css-from-browser-to-image-file
+        this._styleChanged();
+        this._setDimensions(this.height, this.width);
+
+        requestAnimationFrame(() => {
+          const svg = this._chart._svg.node().cloneNode(true);
+
+          this._applyStyleToElement(svg, this._chart._svg.node());
+          Array.prototype.forEach.call(svg.querySelectorAll('[hidden],.brush,#zoom'), el => {
+            if (el && el.parentElement)
+              el.parentElement.removeChild(el);
+          })
+          svg.setAttribute('filter', 'url(#solid)');
+          svg.style.margin = '0px';
+          svg.style.padding = '0px';
+
+          svg.querySelector('filter#solid feFlood').setAttribute('flood-color', this.backgroundColor);
+
+          Array.prototype.forEach.call(svg.querySelectorAll('.axis.main text'), el => {
+            el.setAttribute('fill', this.textColor);
+          });
+          Array.prototype.forEach.call(svg.querySelectorAll('.domain'), el => {
+            el.setAttribute('fill-opacity', '0');
+          });
+          Array.prototype.forEach.call(svg.querySelectorAll('.grid line'), el => {
+            el.setAttribute('stroke-width', 0.5);
+            el.setAttribute('stroke-opacity', 0.2);
+            el.setAttribute('stroke', this.lineColor);
+          });
+          Array.prototype.forEach.call(svg.querySelectorAll('.axis.main line,.axis.main path'), el => {
+            el.setAttribute('stroke', this.lineColor);
+          });
+          Array.prototype.forEach.call(svg.querySelectorAll('*'), el => {
+            el.removeAttribute('class');
+          });
+
+          const data = (new XMLSerializer()).serializeToString(svg);
+          const uri = (decodeURIComponent(location.href)).replace(/ids|room|:\/\/|https|http/gi, '').replace(/[$-/:-?{-~!"^=&_`]/gi, '+').replace(/\+\+/gi, '+');
+          let a = document.createElement('a');
+          a.setAttribute('download', uri + '.' + this.exportFormat);
+          const event = new MouseEvent('click', { view: window, bubbles: true, cancelable: true });
+
+          if (this.exportFormat === 'svg') {
+            const blob = new Blob([data], {type:'image/svg+xml;charset=utf-8}'});
+            a.setAttribute('href', URL.createObjectURL(blob));
+            const cancelled = !a.dispatchEvent(event);
+            if (!cancelled) {
+              this.close();
+            }
+          } else { // save as compressed image file
+            const image = new Image();
+            const ppi = this.resolution;
+            image.src = 'data:image/svg+xml;base64,' + window.btoa(unescape(encodeURIComponent(data)));
+            image.onload = () => {
+              const canvas = document.createElement('canvas'),
+                bbox = this._chart._svg.node().getBoundingClientRect(),
+                height = bbox.height,
+                width = bbox.width;
+              canvas.style.width = width + 'px';
+              canvas.style.height = height + 'px';
+              let scaleFactorX = ppi / this._ppiX;
+              let scaleFactorY = ppi / this._ppiY;
+              canvas.setAttribute('width', scaleFactorX * width);
+              canvas.setAttribute('height', scaleFactorY * height);
+              const context = canvas.getContext('2d');
+              context.scale(canvas.width/width, canvas.height/height);
+              context.drawImage(image, 0, 0);
+              a.setAttribute('href', canvas.toDataURL('image/' + this.exportFormat, this.quality));
+              const cancelled = !a.dispatchEvent(event);
+              if (!cancelled) {
+                this.close();
+              }
+            }
+          }
+        });
+      }
+    }
+    customElements.define(DialogChartExport.is, DialogChartExport);
+  </script>
+
+</dom-module>

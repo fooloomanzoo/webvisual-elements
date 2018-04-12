@@ -1,0 +1,5 @@
+{
+  "directory": "./html/bower_components/",
+  "analytics": false,
+  "strict-ssl": false
+}

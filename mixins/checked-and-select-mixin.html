@@ -1,0 +1,188 @@
+<script>
+  window.WebvisualMixins = window.WebvisualMixins || {};
+  /**
+   * Mixin that adds select events and checked attributes
+   *
+   * @mixinFunction
+   * @polymer
+   */
+  WebvisualMixins.CheckedAndSelectMixin = function(superClass) {
+
+    return class extends superClass {
+
+      constructor() {
+        super();
+      }
+
+      static get properties() {
+        return {
+          /**
+           * If true, the button is a toggle and is currently in the active state.
+           */
+          active: {
+            type: Boolean,
+            notify: true,
+            reflectToAttribute: true
+          },
+
+          selectable: {
+            type: Boolean,
+            value: false,
+            reflectToAttribute: true
+          },
+
+          checked: {
+            type: Boolean,
+            reflectToAttribute: true,
+            notify: true,
+            observer: '_checkedChanged'
+          },
+
+          toggles: {
+            type: Boolean,
+            value: true
+          },
+
+          tapEvent: {
+            type: String
+          },
+
+          tapDuration: {
+            type: Number,
+            value: 300
+          },
+
+          selectEvent: {
+            type: String,
+            value: 'item-select'
+          },
+
+          disabled: {
+            type: Boolean,
+            value: false
+          },
+
+          eventTarget: {
+            type: String
+          }
+        }
+      }
+
+      static get observers() {
+        return [
+          '_addTouchListeners(disabled, selectEvent, tapEvent)'
+        ]
+      }
+
+      connectedCallback() {
+        super.connectedCallback();
+      }
+
+      disconnectedCallback() {
+        super.disconnectedCallback();
+        this._checkedChanged(false, this.checked);
+        this._removeTouchListeners();
+      }
+
+      _addTouchListeners(disabled, selectEvent, tapEvent) {
+        if (selectEvent === undefined) return;
+        if (disabled) {
+          this._removeTouchListeners();
+        } else {
+          let eventTarget;
+          if (!this.eventTarget) {
+            eventTarget = this;
+          } else {
+            eventTarget = this.$[this.eventTarget];
+          }
+          if (tapEvent) {
+            Polymer.Gestures.addListener(eventTarget, 'down', e => this._handleTouch(e));
+            Polymer.Gestures.addListener(eventTarget, 'up', e => this._handleTouch(e));
+          } else if (selectEvent) {
+            Polymer.Gestures.addListener(eventTarget, 'tap', () => this.select());
+          } else {
+            this._removeTouchListeners();
+          }
+        }
+      }
+
+      _removeTouchListeners() {
+        let eventTarget;
+        if (!this.eventTarget) {
+          eventTarget = this;
+        } else {
+          eventTarget = this.$[this.eventTarget];
+        }
+        Polymer.Gestures.removeListener(eventTarget, 'down', e => this._handleTouch(e));
+        Polymer.Gestures.removeListener(eventTarget, 'up', e => this._handleTouch(e));
+        Polymer.Gestures.removeListener(eventTarget, 'tap', () => this.select());
+      }
+
+      _handleTouch(e) {
+        if (e.type === 'down') {
+          this._lastEvent = e;
+        } else {
+          if (this._lastEvent && e.timeStamp - (this._lastEvent.timeStamp || performance.now()) > this.tapDuration) {
+            this.dispatchEvent(new CustomEvent(this.tapEvent, {
+              bubbles: true, composed: true,
+              detail: {
+                item: this.item
+              }
+            }));
+            if (this.checked === false) {
+              this.select(true);
+            }
+          } else {
+            this.select();
+          }
+        }
+      }
+
+      _checkedChanged(checked) {
+        // console.log(this.checked, old, this.nodeName,this.item.id);
+        if (this.selectable && this.selectEvent && !this._preventSelectEvent) {
+          this.dispatchEvent(new CustomEvent(this.selectEvent, {
+            bubbles: true, composed: true,
+            detail: {
+              item: this.item,
+              value: checked
+            }
+          }));
+        }
+      }
+
+      select(value, preventEvent) {
+        if (this.selectable === true) {
+          this._preventSelectEvent = preventEvent;
+          // console.log(value, preventEvent);
+          if (value !== undefined) {
+            this.checked = value;
+          } else if (this.toggles === true) {
+            if (this.checked === true) {
+              this.checked = false;
+            } else {
+              this.checked = true;
+            }
+            this.active = !this.active;
+          } else {
+            this.checked = true;
+          }
+        }
+      }
+
+      deselect() {
+        if (this.checked === true && this.selectable === true) {
+          this.checked = false;
+        }
+      }
+
+      reset() {
+        if (!this._initialized) return;
+        if (super.reset) {
+          super.reset();
+        }
+        this.deselect();
+      }
+    }
+  }
+</script>

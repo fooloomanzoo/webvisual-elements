@@ -1,0 +1,138 @@
+<script>
+  window.WebvisualMixins = window.WebvisualMixins || {};
+  /**
+   * Mixin that adds fullscreen behavior
+   *
+   * @mixinFunction
+   * @polymer
+   */
+  WebvisualMixins.FullscreenMixin = function(superClass) {
+
+    return class extends superClass {
+
+      constructor() {
+        super();
+      }
+
+      static get properties() {
+        return {
+
+          fullscreen: {
+            type: Boolean,
+            value: false,
+            reflectToAttribute: true
+          },
+
+          fullscreenIcon: {
+            type: String,
+            computed: 'computeFullscreenIcon(fullscreen)'
+          }
+
+        }
+      }
+
+      _isFullscreen() {
+        return document.fullscreen ||
+          document.webkitIsFullScreen ||
+          document.mozFullScreen ||
+          document.msFullscreenElement || false;
+      }
+
+      _getParent() {
+        const root = Polymer.dom(this).getOwnerRoot();
+        if (!root)
+          return Polymer.dom(this).parentNode;
+        else if (root.nodeType == Node.DOCUMENT_FRAGMENT_NODE)
+          return root.host;
+        else {
+          return undefined;
+        }
+      }
+
+      connectedCallback() {
+        super.connectedCallback();
+        // fullscreen
+        if (this.requestFullscreen) {
+          this.exitFullscreen = document.exitFullscreen.bind(document);
+          this.addEventListener('fullscreenchange', this.fullScreenChanged.bind(this));
+        } else if (this.webkitRequestFullScreen) {
+          this.requestFullscreen = this.webkitRequestFullScreen.bind(this);
+          this.exitFullscreen = document.webkitCancelFullScreen.bind(document);
+          this.addEventListener('webkitfullscreenchange', this.fullScreenChanged.bind(this));
+        } else if (this.mozRequestFullScreen) {
+          this.requestFullscreen = this.mozRequestFullScreen.bind(this);
+          this.exitFullscreen = document.mozCancelFullScreen.bind(document);
+          document.addEventListener('mozfullscreenchange', this.fullScreenChanged.bind(this));
+        } else if (this.msRequestFullscreen) {
+          this.requestFullscreen = this.msRequestFullscreen.bind(this);
+          this.exitFullscreen = document.msExitFullscreen.bind(document);
+          document.addEventListener('MSFullscreenChange', this.fullScreenChanged.bind(this));
+        }
+      }
+
+      disconnectedCallback() {
+        super.disconnectedCallback();
+        this.removeEventListener('fullscreenchange', this.fullScreenChanged.bind(this), false);
+        this.removeEventListener('webkitfullscreenchange', this.fullScreenChanged.bind(this), false);
+        document.removeEventListener('mozfullscreenchange', this.fullScreenChanged.bind(this), false);
+        document.removeEventListener('MSFullscreenChange', this.fullScreenChanged.bind(this), false);
+      }
+
+      toggleFullscreen(e) {
+        e.stopPropagation()
+        if (this._isFullscreen()) {
+          this.exitFullscreen();
+        } else {
+          this.requestFullscreen();
+        }
+        if (this._resetZoom) {
+          this._resetZoom(e);
+        }
+      }
+
+      fullScreenChanged() {
+        // this.debounce('fullscreen-changed', this._fullScreenChanged, 15);
+        this._fullScreenChanged();
+      }
+
+      _fullScreenChanged() {
+        requestAnimationFrame( () => {
+          const isFullscreen = this._isFullscreen();
+          console.log('isFullscreen', isFullscreen);
+          const parent = this._getParent();
+          if (isFullscreen) {
+            this.fullscreen = true;
+            this.style.position = 'fixed';
+            this.style.top = '0';
+            this.style.left = '0';
+            this.style.right = '0';
+            this.style.bottom = '0';
+            this.style.zIndex = '1000';
+            this.style['border-radius'] = '0px';
+            document.body.style.overflow = 'hidden';
+            if (parent) parent.classList.add('fullscreen');
+          } else {
+            this.fullscreen = false;
+            this.style.position = '';
+            this.style.top = '';
+            this.style.left = '';
+            this.style.right = '';
+            this.style.bottom = '';
+            this.style.zIndex = '';
+            this.style['border-radius'] = '';
+            document.body.style.overflow = '';
+            if (parent) parent.classList.remove('fullscreen');
+          }
+          if (this.notifyResize) {
+            // this.debounce('resize', this.notifyResize);
+            this.notifyResize();
+          }
+        });
+      }
+
+      computeFullscreenIcon(fullscreen) {
+        return fullscreen ? 'fullscreen-exit' : 'fullscreen';
+      }
+    }
+  }
+</script>

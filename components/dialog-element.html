@@ -1,0 +1,67 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../bower_components/paper-dialog-behavior/paper-dialog-behavior.html">
+<link rel="import" href="../../bower_components/iron-resizable-behavior/iron-resizable-behavior.html">
+<link rel="import" href="../shared-styles/dialog-style.html">
+<link rel="import" href="icon-button.html">
+
+<dom-module id="dialog-element">
+  <template strip-whitespace>
+    <style include="dialog-style">
+      :host {
+        outline: none;
+        --calculated-icon-size: var(--icon-size, 1.5em);
+        --calculated-icon-padding: var(--icon-padding, 0.5em);
+      }
+      ::slotted([dialog-title]) {
+        line-height: var(--calculated-icon-size);
+        margin-top: calc(var(--calculated-icon-padding) + 4px);
+        margin-bottom: calc(var(--calculated-icon-padding) + 4px);
+        padding-right: calc(var(--calculated-icon-size) + 2*var(--calculated-icon-padding) + 4px);
+      }
+      #exitButton {
+        position: absolute;
+        right: 4px;
+        top: 4px;
+        margin: 0;
+        border-radius: 50%;
+      }
+      [hidden] {
+        display: none !important;
+      }
+    </style>
+    <slot></slot>
+    <icon-button id="exitButton" icon="close" on-click="close"></icon-button>
+  </template>
+
+</dom-module>
+
+<script>
+  class DialogElement extends Polymer.mixinBehaviors(
+    [Polymer.PaperDialogBehavior], Polymer.Element) {
+
+    static get is() {
+      return 'dialog-element';
+    }
+
+    static get properties() {
+      return {
+        opened: {
+          type: Boolean,
+          reflectToAttribute: true
+        }
+      }
+    }
+
+
+    static get listeners() {
+      return {
+        'iron-overlay-opened': '_debouncedNotifyResize'
+      }
+    }
+
+    _debouncedNotifyResize() {
+      this.debounce('resize', this.notifyResize);
+    }
+  }
+  customElements.define(DialogElement.is, DialogElement);
+</script>

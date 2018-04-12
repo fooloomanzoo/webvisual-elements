@@ -1,0 +1,45 @@
+<script>
+  window.WebvisualMixins = window.WebvisualMixins || {};
+  /**
+   * Mixin that sets a custum Element-Color
+   *
+   * @mixinFunction
+   * @polymer
+   */
+  WebvisualMixins.ColorMixin = function(superClass) {
+
+    return class extends superClass {
+
+      static get observers() {
+        return [
+          'setColor(item.color)'
+        ]
+      }
+
+      setColor(color) {
+        // random color if color is not set
+        if (color) {
+          this.updateStyles({ '--device-color': color || null });
+          if (!this.item.isIndicatorLamp) {
+            this.updateStyles({ '--device-state-inrange-color': color || null });
+          } else {
+            this.updateStyles({ '--device-state-inrange-color': null });
+          }
+        }
+        this.updateStyles();
+      }
+
+      resetColor() {
+        this.setColor((this.item && this.item.color) || '');
+      }
+
+      getComputedStyleValue(property) {
+        if (window.ShadyCSS) {
+          return ShadyCSS.getComputedStyleValue(this, property);
+        } else {
+          return getComputedStyle(this).getPropertyValue(property);
+        }
+      }
+    }
+  }
+</script>

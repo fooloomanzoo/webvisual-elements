@@ -1,0 +1,63 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../login/accessibility-mixin.html" />
+<link rel="import" href="../mixins/fetch-mixin.html" />
+
+<dom-module id="fetch-data">
+
+  <script>
+    class FetchData extends WebvisualMixins.AccessibilityMixin(WebvisualMixins.FetchMixin(Polymer.Element)) {
+
+      static get is() {
+        return 'fetch-data'
+      }
+
+      static get properties() {
+        return {
+          urlPrefix: {
+            type: String,
+            value: '/data/'
+          },
+
+          room: {
+            type: String,
+            observer: '_load'
+          },
+
+          data: {
+            type: Object,
+            value: function() {
+              return {};
+            },
+            notify: true
+          }
+        }
+      }
+
+      _load() {
+        super._load();
+        if (!this.room) {
+          return;
+        }
+        const names = this.room.split('/')
+          .filter(function(str) {
+            return str !== '';
+          });
+        if (names.length === 2) {
+          const url = names[0] + '+' + names[1] + '+svgSource.json';
+          this._fetch(url, 'GET', 'include', 'json', 'data')
+            .catch(err => {
+              console.log(err);
+            });
+        } else {
+          this.dispatchEvent(new CustomEvent('data-error', {
+            bubbles: true,
+            composed: true,
+            detail: 'Failed to load svg-data'
+          }));
+        }
+      }
+    }
+    customElements.define(FetchData.is, FetchData);
+  </script>
+
+</dom-module>

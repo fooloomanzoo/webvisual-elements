@@ -1,0 +1,166 @@
+<link rel="import" href="fetch-mixin.html">
+<script>
+  const _languageMixinElements = /** @type {Set}*/ new Set();
+
+  window.WebvisualMixins = window.WebvisualMixins || {};
+  /**
+   *  Mixin that adds localization to an element
+   *
+   * @mixinFunction
+   * @polymer
+   */
+  WebvisualMixins.LocalizeMixin = function(superClass) { // eslint-disable-line no-unused-vars no-undef
+
+    return class extends WebvisualMixins.FetchMixin(superClass) {
+
+      constructor() {
+        super();
+      }
+
+      static get properties() {
+        return {
+
+          /**
+           * language specifier
+           * e.g. 'de' for German
+           * @type {string}
+           */
+          language: {
+            type: String,
+            value: window.navigator.language,
+            notify: true,
+            observer: '_languageChanged'
+          },
+
+          /**
+           * defines, wheather to have an own language attribute or to get and set it according to all other elements, that implement this mixin
+           * @type {boolean}
+           */
+          customLanguage: {
+            type: Boolean,
+            value: false
+          },
+
+          /**
+           * fallback language specifier, if ressource is not found
+           * @type {string}
+           */
+          fallbackLanguage: {
+            type: String,
+            value: 'en'
+          },
+
+          /**
+           * dictonary of entries to set
+           * For example, a valid dictionary would be:
+           * this.localesDictionary = { 'greeting': 'Bonjour!', 'bye': 'Au revoir!' }
+           */
+          localesDictionary: {
+            type: Object,
+            notify: true,
+            value: function() {
+              return {};
+            }
+          },
+
+          /**
+           * url prefix for language resources, the dictionaries
+           * e.g. '/locales/user-interface/'
+           * @type {string}
+           */
+          localesUrlPrefix: {
+            type: String
+          },
+
+          /**
+           * function that translates a string to the current 'language'. Any parameters to the
+           * string should be passed in order, as follows:
+           * 'localize(stringKey, param1Name, param1Value, param2Name, param2Value)'
+           * @type {Function}
+           */
+          localize: {
+            type: Function,
+            computed: '__computeLocalize(localesDictionary, language)'
+          }
+        }
+      }
+
+      static get observers() {
+        return [
+          '_loadLocalesDictionary(localesUrlPrefix, language)',
+          '_customLanguageChanged(customLanguage)'
+        ]
+      }
+
+      _loadLocalesDictionary(localesUrlPrefix, language, attempts) {
+        if (localesUrlPrefix === undefined || !language || this._recentLanguage === language) return;
+        language = language.toLowerCase();
+
+        if (!Array.isArray(localesUrlPrefix)) {
+          localesUrlPrefix = [ localesUrlPrefix ];
+        }
+        const localesDictionary = (this._recentLanguage === language) ? (this.localesDictionary || {}) : {};
+
+        for (let i = 0; i < localesUrlPrefix.length; i++) {
+          this._fetch(localesUrlPrefix[i] + language + '.json', 'GET', 'include', 'json', null, true, true)
+            .then(obj => {
+              for (let prop in obj) {
+                localesDictionary[prop] = obj[prop];
+              }
+              this.set('localesDictionary', localesDictionary);
+              this._recentLanguage = language;
+            })
+            .catch(err => {
+              attempts = attempts || 0;
+              if (language.split('-').length > 1) {
+                this._loadLocalesDictionary(localesUrlPrefix, language.split('-')[0], ++attempts);
+              } else if (attempts === undefined || attempts < 3){
+                this._loadLocalesDictionary(localesUrlPrefix, this.fallbackLanguage, ++attempts);
+              } else {
+                console.log(localesUrlPrefix, language, err);
+              }
+            });
+        }
+      }
+
+      /*
+       * Returns a computed 'localize' method, based on the current 'language'.
+       */
+      __computeLocalize(localesDictionary, language) { // eslint-disable-line no-unused-vars
+        return function() {
+          if (!(localesDictionary && arguments[0] && typeof arguments[0] === 'string'))
+            return '';
+
+          let translatedValue = localesDictionary[arguments[0]];
+
+          for (let i = 1; i < arguments.length; i++) {
+            if ((translatedValue && translatedValue[arguments[i]]) === undefined) {
+              return arguments[arguments.length - 1];
+            }
+            translatedValue = translatedValue[arguments[i]];
+          }
+          return translatedValue;
+        };
+      }
+
+      _languageChanged(language) {
+        if (!this.customLanguage) {
+          _languageMixinElements.forEach(el => {
+            if (el.language !== language) {
+              el.language = language;
+            }
+          })
+        }
+      }
+
+      _customLanguageChanged(customLanguage) {
+        if (customLanguage === true) {
+          _languageMixinElements.delete(this);
+        } else {
+          _languageMixinElements.add(this);
+        }
+      }
+
+    }
+  }
+</script>

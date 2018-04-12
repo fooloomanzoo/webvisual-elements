@@ -1,0 +1,68 @@
+<!--
+Modification from element in Polymer Shop Demo App
+-->
+
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../bower_components/paper-behaviors/paper-ripple-behavior.html">
+
+<dom-module id="ripple-container">
+  <template strip-whitespace>
+    <style>
+      :host {
+        display: inline-block;
+        position: relative;
+      }
+
+      paper-ripple {
+        color: var(--highlight-color, currentColor);
+      }
+    </style>
+    <slot></slot>
+  </template>
+  <script>
+
+    class RippleContainer extends Polymer.mixinBehaviors(
+      [Polymer.PaperRippleBehavior], Polymer.Element) {
+
+      static get is() { return 'ripple-container'; }
+
+      constructor() {
+        super();
+        this._isDown = false;
+      }
+
+      ready() {
+        super.ready();
+        this.addEventListener('focus', (e)=>this._onFocus(e), true);
+        this.addEventListener('blur', (e)=>this._onBlur(e), true);
+        this.addEventListener('down', (e)=>this._rippleDown(e));
+        this.addEventListener('up', (e)=>this._rippleUp(e));
+      }
+
+      _onFocus(event) {
+        // Prevent second ripple when clicking causes both focus and down.
+        if (!this._isDown) {
+          this._rippleDown(event);
+        }
+      }
+
+      _onBlur(event) {
+        this._rippleUp(event);
+      }
+
+      _rippleDown(event) {
+        this._isDown = true;
+        this.getRipple().downAction(event);
+      }
+
+      _rippleUp(event) {
+        this._isDown = false;
+        this.getRipple().upAction(event);
+      }
+
+    }
+
+    customElements.define(RippleContainer.is, RippleContainer);
+
+  </script>
+</dom-module>

@@ -1,0 +1,177 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../login/accessibility-mixin.html">
+<link rel="import" href="../mixins/fetch-mixin.html">
+
+<dom-module id="facility-data">
+  <script>
+    class FacilityData extends WebvisualMixins.AccessibilityMixin(WebvisualMixins.FetchMixin(Polymer.Element)) {
+
+      static get is() {
+        return 'facility-data'
+      }
+
+      static get properties() {
+        return {
+          urlPrefix: {
+            type: String,
+            value: '/data/'
+          },
+
+          room: {
+            type: String
+          },
+
+          facilityName: {
+            type: String,
+            notify: true,
+            computed: '_computeFaciltyName(room)'
+          },
+
+          systemName: {
+            type: String,
+            notify: true,
+            computed: '_computeSystemName(room)'
+          },
+
+          facilities: {
+            type: Array,
+            notify: true
+          },
+
+          facility: {
+            type: Object,
+            notify: true
+          },
+
+          system: {
+            type: Object,
+            notify: true
+          },
+
+          items: {
+            type: Array,
+            notify: true
+          }
+        }
+      }
+
+      static get observers() {
+        return [
+          '_computeFacility(facilities, facilityName)',
+          '_computeSystem(facility, systemName)',
+          '_computeItems(facilityName, systemName)'
+        ]
+      }
+
+      _load() {
+        super._load();
+        this._fetch('facilities.json', 'GET', 'include', 'json', 'facilities')
+          .catch(err => {
+            console.warn(err);
+          });
+      }
+
+      _computeFaciltyName(room) {
+        if (room) {
+          const names = room.split('/').filter(function(str) {
+            return str !== '';
+          });
+          if (names.length === 2) {
+            return names[0];
+          }
+        }
+        return '';
+      }
+
+      _computeSystemName(room) {
+        if (room) {
+          const names = room.split('/').filter(function(str) {
+            return str !== '';
+          });
+          if (names.length === 2) {
+            return names[1];
+          }
+        }
+        return '';
+      }
+
+      _computeFacility(facilities, facilityName) {
+        if (facilities && facilityName) {
+          this._getNamedArrayItem(facilities, facilityName)
+            .then(facility => {
+              if (!(this.facility && this._equals(facility, this.facility))) {
+                this.set('facility', facility);
+              }
+            })
+            .catch(() => {
+              this.dispatchEvent(new CustomEvent('empty-configuration', {
+                bubbles: true,
+                composed: true
+              }));
+            })
+        }
+      }
+
+      _computeSystem(facility, systemName) {
+        if (facility && facility.systems && systemName) {
+          this._getNamedArrayItem(facility.systems, systemName)
+            .then(system => {
+              if (!(this.system && this._equals(system, this.system))) {
+                this.set('system', system);
+              }
+            })
+            .catch(() => {
+              this.dispatchEvent(new CustomEvent('empty-configuration', {
+                bubbles: true,
+                composed: true
+              }));
+            })
+        }
+      }
+
+      _computeItems(facilityName, systemName) {
+        // console.log(facilityName, systemName);
+        if (!(facilityName && systemName)) return;
+
+        this._fetch(facilityName + '+' + systemName + '+items.json', 'GET', 'include', 'json')
+          .then(items => {
+            // console.log(items);
+            let color = '', perm, pos;
+            if (items && items.length) {
+              for (let i = 0; i < items.length; i++) {
+                if (!items[i].color) {
+                  // set custom colors
+                  color = '#';
+                  perm = ['2C', 'F5'];
+                  perm.push((4 * Math.floor(Math.random() * 64)).toString(16));
+                  for (let j = 3; j > 0; j--) {
+                    pos = Math.floor(Math.random() * j);
+                    color += ((perm[pos].length === 1) ? '0' : '') + perm[pos];
+                    perm.splice(pos, 1);
+                  }
+                  items[i].color = color;
+                }
+              }
+              this.set('items', items);
+            }
+          });
+      }
+
+      _getNamedArrayItem(arr, name) {
+        return new Promise((resolve, reject) => {
+          if (!arr || !name)
+            reject('empty');
+          let c;
+          for (let i = 0; (c = arr[i]); ++i) {
+            if (c.name === name) {
+              resolve(c);
+            }
+          }
+          reject('not existing');
+        });
+      }
+    }
+    customElements.define(FacilityData.is, FacilityData);
+  </script>
+
+</dom-module>

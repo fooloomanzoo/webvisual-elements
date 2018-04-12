@@ -1,0 +1,119 @@
+<script src="../../bower_components/fetch/fetch.js"></script>
+
+<script>
+  window.WebvisualMixins = window.WebvisualMixins || {};
+  /**
+   * Mixin that fetches data from server and saves them optionally
+   *
+   * @mixinFunction
+   * @polymer
+   */
+  WebvisualMixins.FetchMixin = function(superClass) {
+
+    return class extends superClass {
+
+      constructor() {
+        super();
+      }
+
+      static get properties() {
+        return {
+          urlPrefix: {
+            type: String,
+            value: ''
+          },
+
+          noEqualityCheck: {
+            type: Boolean
+          },
+
+          saveInLocalStorage: {
+            type: Boolean
+          }
+        }
+      }
+
+      _fetch(uri, method, cred, type, property, saveInLocalStorage, noEqualityCheck, body) {
+        if (uri === undefined) return Promise.resolve();
+
+        const url = this.urlPrefix + uri;
+        saveInLocalStorage = saveInLocalStorage || this.saveInLocalStorage;
+        noEqualityCheck = noEqualityCheck || this.noEqualityCheck;
+
+        const options = {
+          method: method,
+          credentials: cred || 'include',
+          body: body
+        };
+
+        return fetch(url, options)
+          .then(res => {
+            if (res.status < 400) {
+              if (type === 'json') {
+                return res.json();
+              } else {
+                return res.text();
+              }
+            } else if ((res = localStorage.getItem(url))) {
+              console.warn(url, res);
+              return res;
+            } else {
+              return Promise.reject(res);
+            }
+          })
+          .then( data => {
+            if (property && data !== undefined) {
+              // console.log(property, data);
+              if ((noEqualityCheck || !this[property]) ? true : !this._equals(this[property], data)) {
+                this.set(property, data);
+              }
+            }
+            if (saveInLocalStorage && url !== undefined && data !== undefined) {
+              if (type === 'json' && typeof data !== 'string') {
+                localStorage.setItem(url, JSON.stringify(data));
+              } else {
+                localStorage.setItem(url, data);
+              }
+            }
+            if (type === 'xml' && data !== undefined) {
+              return new window.DOMParser().parseFromString(data, "text/xml")
+            }
+            return Promise.resolve(data);
+          })
+          .catch( res => {
+            if (saveInLocalStorage && property && url !== undefined) {
+              let data = localStorage.getItem(url);
+              if (data) {
+                if (type === 'json') {
+                  data = JSON.parse(data);
+                }
+                this.set(property, data);
+              }
+            }
+            return Promise.reject(res);
+          })
+      }
+
+      _equals(x, y) {
+        if (x === y) return true;
+
+        if (!(x instanceof Object) || !(y instanceof Object)) return false;
+
+        if (x.constructor !== y.constructor) return false;
+
+        for (let p in x) {
+          if (!x.hasOwnProperty(p)) continue;
+          if (!y.hasOwnProperty(p)) return false;
+          if (x[p] === y[p]) continue;
+          if (typeof(x[p]) !== "object") return false;
+          if (!this._equals(x[p], y[p])) return false;
+        }
+
+        for (let p in y) {
+          if (y.hasOwnProperty(p) && !x.hasOwnProperty(p)) return false;
+        }
+        return true;
+      }
+    }
+  }
+</script>

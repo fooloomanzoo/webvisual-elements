@@ -1,0 +1,121 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
+
+<link rel="import" href="icon-set.html">
+<!-- Modification of polymers paper-icon-button because of conflicts with paper-style -->
+
+<dom-module id="icon-button">
+  <template strip-whitespace>
+    <style>
+      :host {
+        display: inline-flex;
+        position: relative;
+        --calculated-icon-size: var(--icon-size, 1.5em);
+        --calculated-icon-padding: var(--icon-padding, 0.5em);
+        color: currentColor;
+        pointer-events: all;
+        align-items: center;
+        justify-content: center;
+        outline: none;
+        -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+        -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;
+        cursor: pointer;
+        line-height: 0;
+        flex-shrink: 0;
+        font-size: 1em;
+        border-radius: 50%;
+        border-width: 0;
+        background-color: transparent;
+        transition: background-color 250ms cubic-bezier(0.6, 0, 0.2, 1);
+
+        padding: var(--calculated-icon-padding);
+        width: calc(2*var(--calculated-icon-padding) + var(--calculated-icon-size));
+        height: calc(2*var(--calculated-icon-padding) + var(--calculated-icon-size));
+
+        box-sizing: border-box !important;
+
+        pointer-events: all;
+        @apply --icon-button;
+      }
+
+      :host([checked]) {
+        @apply --checked-icon-button;
+      }
+      :host([disabled]) {
+        color: var(--disabled-text-color);
+        background-color: transparent;
+        border-color: var(--disabled-text-color);
+        cursor: auto;
+        pointer-events: none;
+        @apply --disabled-icon-button;
+      }
+
+      :host(:hover),
+      :host(:focus) {
+        background-color: var(--icon-hover-background, transparent);
+      }
+
+      iron-icon {
+        --iron-icon-width: var(--calculated-icon-size);
+        --iron-icon-height: var(--calculated-icon-size);
+      }
+
+      #ripple {
+        color: var(--icon-ink, currentColor);
+        border-radius: inherit;
+      }
+    </style>
+    <paper-ripple id="ripple" center></paper-ripple>
+    <iron-icon id="icon" icon="[[icon]]" alt$="[[alt]]"></iron-icon>
+  </template>
+
+  <script>
+    class IconButton extends Polymer.Element {
+
+      static get is() {
+        return 'icon-button';
+      }
+
+      static get properties() {
+        return {
+          icon: {
+            type: String
+          },
+          alt: {
+            type: String,
+            observer: "_altChanged"
+          },
+          checked: {
+            type: Boolean,
+            value: false,
+            notify: true,
+            reflectToAttribute: true
+          }
+        }
+      }
+
+      connectedCallback() {
+        super.connectedCallback();
+        Polymer.Gestures.addListener(this, 'tap', e => this._changeChecked(e));
+      }
+
+      disconnectedCallback() {
+        super.disconnectedCallback();
+        Polymer.Gestures.removeListener(this, 'tap', e => this._changeChecked(e));
+      }
+
+      _altChanged(newValue, oldValue) {
+        const system = this.getAttribute('aria-system');
+        if (!system || oldValue === system) {
+          this.setAttribute('aria-system', newValue);
+        }
+      }
+
+      _changeChecked() {
+        this.checked = !this.checked;
+      }
+    }
+
+    customElements.define(IconButton.is, IconButton);
+  </script>
+</dom-module>

@@ -1,0 +1,222 @@
+<!-- Modification of polymers paper-toggle-button because of conflicts with paper-style and simplifications (no form support needed)-->
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+
+<dom-module id="toggle-button">
+  <template strip-whitespace>
+    <style>
+      :host {
+        @apply --layout-inline;
+        @apply --layout-start-justified;
+        @apply --layout-center;
+        position: relative;
+        outline:none;
+        margin: 0em;
+        box-sizing: border-box;
+        text-align: center;
+        float: left;
+        clear: both;
+        padding: 0.75em 1.5em;
+        cursor: pointer;
+      }
+
+      :host([disabled]) {
+        pointer-events: none;
+      }
+
+      .bar {
+        position: absolute;
+        height: 100%;
+        width: 100%;
+        border-radius: 0.5em;
+        pointer-events: none;
+        opacity: 0.75;
+        transition: background-color linear 100ms;
+        background-color: var(--toggle-button-unchecked-bar-color, #000000);
+        @apply --toggle-button-unchecked-bar);
+      }
+
+      .button {
+        position: absolute;
+        top: -0.125em;
+        left: 0;
+        height: 1.25em;
+        width: 1.25em;
+        border-radius: 50%;
+        box-shadow: 0 1px 5px 0 rgba(0, 0, 0, 0.6);
+        transition: -webkit-transform linear 100ms, background-color linear 100ms;
+        transition: transform linear 100ms, background-color linear 100ms;
+        will-change: transform;
+        background-color: var(--toggle-button-unchecked-button-color, --paper-grey-50);
+
+        @apply --toggle-button-unchecked-button;
+      }
+
+      .button.dragging {
+        -webkit-transition: none;
+        transition: none;
+      }
+
+      :host([checked]:not([disabled])) .bar {
+        opacity: 0.5;
+        background-color: var(--toggle-button-checked-bar-color, --primary-color);
+
+        @apply --toggle-button-checked-bar;
+      }
+
+      :host([disabled]) .bar {
+        background-color: #000;
+        opacity: 0.2;
+      }
+
+      :host([checked]) .button {
+        -webkit-transform: translate(1.25em, 0);
+        transform: translate(1.25em, 0);
+      }
+
+      :host([checked]:not([disabled])) .button {
+        background-color: var(--toggle-button-checked-button-color, --primary-color);
+        @apply --toggle-button-checked-button;
+      }
+
+      :host([disabled]) .button {
+        background-color: var(--disabled-text-color);
+        opacity: 1;
+      }
+
+      #ink {
+        position: absolute;
+        top: -1.125em;
+        left: -1.125em;
+        right: auto;
+        bottom: auto;
+        width: 3.5em;
+        height: 3.5em;
+        opacity: 0.8;
+        pointer-events: none;
+        color: var(--toggle-button-unchecked-ink-color, --primary-text-color);
+      }
+
+      :host([checked]) #ink {
+        color: var(--toggle-button-checked-ink-color, --primary-color);
+      }
+
+      .container {
+        display: inline-block;
+        position: relative;
+        width: 2.5em;
+        height: 1em;
+        margin: 0.25em 1px;
+      }
+
+      .content {
+        position: relative;
+        display: inline-block;
+        vertical-align: middle;
+        padding-left: 0.75em;
+        pointer-events: none;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        color: inherit;
+      }
+
+      ::slotted(iron-icon) {
+        margin-right: 0.75em;
+      }
+      [hidden] {
+        display: none !important;
+      }
+    </style>
+
+    <slot name="icon"></slot>
+    <section class="container">
+      <paper-ripple id="ink" class="circle"></paper-ripple>
+      <section id="toggleBar" class="bar"></section>
+      <section id="toggleButton" class="button"></section>
+    </section>
+
+    <section class="content">
+      <slot></slot>
+    </section>
+
+  </template>
+
+  <script>
+    class ToggleButton extends Polymer.Element {
+
+      static get is() {
+        return 'toggle-button';
+      }
+
+      static get properties() {
+        return {
+          checked: {
+            type: Boolean,
+            notify: true,
+            reflectToAttribute: true
+          },
+
+          role: {
+            type: String,
+            reflectToAttribute: true,
+            readOnly: true,
+            value: 'button'
+          },
+
+          tabindex: {
+            type: Number,
+            reflectToAttribute: true,
+            value: 0
+          }
+
+        }
+      }
+
+      connectedCallback() {
+        super.connectedCallback();
+        Polymer.Gestures.addListener(this, 'tap', e => this._onclicked(e));
+        Polymer.Gestures.addListener(this, 'track', e => this._ontrack(e));
+      }
+      disconnectedCallback() {
+        super.disconnectedCallback();
+        Polymer.Gestures.removeListener(this, 'tap', e => this._onclicked(e));
+        Polymer.Gestures.removeListener(this, 'track', e => this._ontrack(e));
+      }
+
+      _ontrack(event) {
+        const track = event.detail;
+        if (track.state === 'start') {
+          this._trackStart(track);
+        } else if (track.state === 'track') {
+          this._trackMove(track);
+        } else if (track.state === 'end') {
+          this._trackEnd(track);
+        }
+      }
+
+      _trackStart() {
+        this._width = this.$.toggleBar.offsetWidth / 2;
+        this._trackChecked = this.checked;
+        this.$.toggleButton.classList.add('dragging');
+      }
+
+      _trackMove(track) {
+        const dx = track.dx;
+        this._x = Math.min(this._width,
+          Math.max(0, this._trackChecked ? this._width + dx : dx));
+        this.translate3d(this._x + 'px', 0, 0, this.$.toggleButton);
+      }
+
+      _trackEnd() {
+        this.$.toggleButton.classList.remove('dragging');
+        this.transform('', this.$.toggleButton);
+      }
+
+      _onclicked() {
+        this.checked = this.checked ? false : true;
+      }
+
+    }
+    customElements.define(ToggleButton.is, ToggleButton);
+  </script>
+</dom-module>

@@ -1,0 +1,227 @@
+<link rel="import" href="../../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../../bower_components/iron-list/iron-list.html">
+<link rel="import" href="../device-mixin.html">
+
+<dom-module id="device-table">
+	<template strip-whitespace>
+    <style>
+      :host {
+        /*height needs to be set by outer element*/
+        color: var(--table-color, currentColor);
+        background-color: var(--table-background, transparent);
+        @apply --layout-vertical;
+        width: 100%;
+        height: 100%;
+        position: relative;
+        border-color: inherit;
+        border-radius: inherit;
+  			min-width: 150px;
+  			min-height: 75px;
+        text-align: left;
+        line-height: 1.4;
+        pointer-events: all;
+	      font-weight: 400;
+      }
+  		span {
+  			position: relative;
+  			padding: 0 0.5em;
+  		}
+  		.tr {
+        @apply --layout-horizontal;
+        @apply --layout-around-justified;
+    		font-size: 0.7em;
+        -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;
+  		}
+  		.tr:not([state]), .tr[state="0"] {
+  			background: transparent; color: inherit;
+  		}
+  		.tr:nth-of-type(even) {
+  			background: rgba(137, 137, 137, 0.15);
+  		}
+  		.tr[state="1"] {
+  			background: var(--device-state-exceeds-color, #eb5f73);
+  			color: var(--device-state-exceeds-text-color, var(--secondary-text-color));
+  		}
+  		.tr[state="-1"] {
+  			background: var(--device-state-deceeds-color, #af82b9);
+  			color: var(--device-state-deceeds-text-color, var(--secondary-text-color));
+  		}
+  		.tr[onlyfirstrow] > span:not(:first-of-type) {
+  			display: none;
+  		}
+  		#head {
+        @apply --layout-horizontal;
+        @apply --layout-around-justified;
+        font-size: 0.8em;
+  			width: 100%;
+  			line-height: 1.7;
+  			border-bottom-style: solid;
+  			border-bottom-width: thin;
+  			border-color: inherit;
+  			cursor: pointer;
+  			text-align: center;
+  		}
+      #caption {
+        font-weight: 500;
+        display: block;
+        position: relative;
+        font-size: 0.6em;
+        background-color: rgba(0, 0, 0, 0.2);
+        color: currentColor;
+        padding: 0.5em 1em;
+        text-align: center;
+        -webkit-user-select: all; -moz-user-select: all; -ms-user-select: all; user-select: all;
+      }
+  		[hidden] {
+  			display: none !important;
+  		}
+  		#list {
+  			height: auto;
+  			width: 100%;
+  			flex: 1 1 50px;
+  		}
+      ::selection {
+        background: transparent;
+      }
+      ::-moz-selection {
+        background: transparent;
+      }
+    </style>
+
+    <section id="head" hidden$="[[hideHeader]]" on-click="_toggleGridView">
+      <span>Datum</span>
+      <span hidden$="[[onlyFirstRow]]">Wert <span hidden$="[[!item.unit]]" style="font-style:italic;">([[item.unit]])</span></span>
+    </section>
+
+  	<iron-list id="list" items="[[values]]" as="value">
+  		<template>
+        <div class="tr" state$="[[checkExceedingState(value)]]" onlyfirstrow$="[[onlyFirstRow]]">
+          <span>[[computeDate(value.x)]]</span>
+          <span>[[computeValue(value.y)]]</span>
+        </div>
+      </template>
+	   </iron-list>
+
+	   <section id="caption" hidden$="[[!caption]]">[[caption]]</section>
+	</template>
+
+	<script>
+		class DeviceTable extends WebvisualMixins.DeviceMixin(Polymer.Element) {
+
+			static get is() {
+				return 'device-table';
+			}
+
+			static get properties() {
+				return {
+					caption: {
+            type: String,
+            value: ''
+          },
+
+					keysForCaption: {
+            type: Boolean
+          },
+
+					onlyFirstRow: {
+            type: Boolean
+          },
+
+					hideHeader: {
+            type: Boolean
+          },
+
+					fullDate: {
+            type: Boolean
+          },
+
+					viewLength: {
+						type: Number,
+						value: Number.POSITIVE_INFINITY
+					},
+
+					storeInside: {
+						type: Boolean,
+						value: false
+					}
+				}
+			}
+
+			static get observers() {
+				return [
+					'_computeKeysForCaption(keysForCaption, item)'
+				]
+			}
+
+			insertValues(values) {
+				if (values && values.length) {
+					setTimeout(() => {
+						if (!this._initialized) {
+							this.set('values', values.reverse());
+							this._initialized = true;
+						} else {
+							for (let i = 0; i < values.length; i++) {
+								this.unshift('values', values[i]);
+							}
+						}
+					}, 0);
+				} else if (!this._initialized) {
+					this.renderClearing();
+				}
+			}
+
+			spliceValues(splices) {
+				// var list = this.$.list.items;
+
+				setTimeout(() => {
+          const changeRecord = [];
+					for (let i = 0; i < splices.length; i++) {
+            let j;
+						for (j = this.values.length - 1; j >= 0; j--) {
+							if (this.values[j].x === splices[i].x)
+								break;
+						}
+						if (j !== -1) {
+							this.values.splice(j, 1);
+							changeRecord.push({
+								index: j,
+								removed: [this.values[j]],
+								addedCount: 0,
+								object: this.values,
+								type: 'splice'
+							});
+						}
+					}
+					this.notifySplices('values', changeRecord);
+				}, 0);
+			}
+
+			renderClearing() {
+				this.$.list.set('items', []);
+			}
+
+			_computeKeysForCaption(keysForCaption, item) {
+				if (keysForCaption && item && item.keys) {
+					let cap = '';
+					for (let key in this.item.keys) {
+						cap += this.item.keys[key] + ' ';
+					}
+					this.$.caption.textContent = cap;
+				} else if (this.caption) {
+					this.$.caption.textContent = this.caption;
+				}
+				// if (item && item.color) {
+				//   this.$.caption.style.background = item.color;
+				// } else {
+				//   this.$.caption.style.background = '';
+				// }
+			}
+
+			_toggleGridView() {
+				this.$.list.grid = !this.$.list.grid;
+			}
+		}
+		customElements.define(DeviceTable.is, DeviceTable);
+	</script>
+
+</dom-module>

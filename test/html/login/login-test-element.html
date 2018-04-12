@@ -1,0 +1,51 @@
+<link rel="import" href="/bower_components/polymer/polymer-element.html">
+<link rel="import" href="/login/accessibility-mixin.html">
+
+<dom-module id="login-test-element">
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+    </style>
+    <template is="dom-if" if="[[loggedIn]]">
+      <h2>you are logged in</h2>
+      <template is="dom-if" if="[[_loadFunctionCalled]]">
+        <h2>_load()-Function is called</h2>
+      </template>
+    </template>
+    <template is="dom-if" if="[[!loggedIn]]">
+      <h2>you are not logged in</h2>
+    </template>
+    <button on-click="_openLoginDialog">open login-dialog</button>
+  </template>
+
+  <script>
+    /**
+     * `test-element`
+     *
+     *
+     * @customElement
+     * @polymer
+     * @demo demo/index.html
+     */
+    class TestElement extends WebvisualMixins.AccessibilityMixin(Polymer.Element) {
+
+      static get is() { return 'login-test-element'; }
+
+      static get properties() {
+        return {
+          _loadFunctionCalled: Boolean
+        }
+      }
+
+      _load() {
+        super._load();
+        this._loadFunctionCalled = true;
+      }
+
+    }
+
+    window.customElements.define(TestElement.is, TestElement);
+  </script>
+</dom-module>

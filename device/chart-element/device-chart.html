@@ -1,0 +1,1619 @@
+<link rel="import" href="../../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../../bower_components/iron-resizable-behavior/iron-resizable-behavior.html">
+
+<link rel="import" href="axes-mixin.html">
+<link rel="import" href="../../mixins/fullscreen-mixin.html">
+<link rel="import" href="../../mixins/localize-mixin.html">
+
+<link rel="import" href="../../components/icon-button.html">
+<link rel="import" href="../../components/drawer-element.html">
+<link rel="import" href="../../shared-styles/selectbox-style.html">
+<link rel="import" href="../../shared-styles/button-style.html">
+<link rel="import" href="../../shared-styles/control-style.html">
+
+<link rel="import" href="device-graph.html">
+<link rel="import" href="dialog-chart-export.html">
+
+<dom-module id="device-chart">
+  <template strip-whitespace>
+    <style include="control-style selectbox-style button-style">
+      :host {
+        display: block;
+        box-sizing: content-box;
+        position: relative;
+        font: inherit;
+        color: inherit;
+        letter-spacing: normal;
+        user-select: none !important;
+        z-index: auto;
+        overflow: visible;
+        transition: background 150ms linear;
+      }
+      :host([fullscreen]) {
+        color: var(--fullscreen-color, white);
+        background-color: var(--fullscreen-background-color);
+        padding-top: 1em !important;
+        padding-left: 1em !important;
+        padding-right: 1em !important;
+        padding-bottom: calc(8px + var(--icon-size, 1.5em) + 2*var(--icon-padding, 0.5em)) !important;
+        margin: 0 !important;
+        --control-button-distance: 8px !important;
+      }
+      :host([fullscreen]) #control {
+        bottom: 8px !important;
+        top: auto !important;
+        left: auto !important;
+        right: 16px !important;
+        mix-blend-mode: normal !important;
+      }
+      :host(:-webkit-full-screen) {
+        color: var(--fullscreen-color, white);
+        background-color: var(--fullscreen-background-color);
+        height: unset;
+        width: unset;
+        max-height: unset !important;
+        flex-basis: unset;
+      }
+      :host(:-webkit-full-screen) * {
+        /*mix-blend-mode: normal !important;*/
+      }
+      #svg {
+        width: 100%;
+        height: 100%;
+        font-family: inherit !important;
+        overflow: visible;
+      }
+      rect#plot {
+        fill: var(--chart-plot-background-color, #fff);
+        stroke: currentColor;
+        fill-opacity: var(--chart-plot-background-opacity, 0.2);
+        stroke-opacity: 0.5;
+        stroke-width: 1px;
+      }
+      .axis {
+        cursor: default;
+        pointer-events: all;
+        font-family: inherit !important;
+      }
+      .axis path, .axis line {
+        fill: currentColor;
+        fill-opacity: 0.001;
+        stroke: currentColor;
+        stroke-opacity: 0.9;
+        transition: fill-opacity 200ms linear;
+      }
+      .axis line {
+        stroke-width: 1.25px;
+      }
+      .axis.main line {
+        stroke: var(--chart-line-color, currentColor);
+      }
+      .axis:hover path,
+      .axis.dragged path {
+        fill-opacity: 0.25;
+      }
+      .axis.y .tick:last-of-type:not(:only-of-type) text {
+        alignment-baseline: before-edge;
+      }
+      .axis.x .tick:last-of-type:not(:only-of-type) text {
+        text-anchor: end;
+      }
+      .grid .tick line {
+        stroke: var(--chart-line-color, var(--grid-color, currentColor));
+        stroke-opacity: 0.1;
+        stroke-width: 0.75px;
+      }
+      .grid path {
+        stroke-width: 0;
+      }
+      .brush .selection {
+        fill: currentColor;
+        fill-opacity: 0.8;
+        stroke: currentColor;
+        stroke-width: 0;
+      }
+      .brush .overlay {
+        cursor: pointer;
+      }
+      #graphs .area {
+        fill-opacity: 0.4;
+        @apply --chart-area;
+      }
+      #graphs .area:last-of-type {
+        fill-opacity: 0.5;
+      }
+      #graphs .line {
+        cursor: pointer;
+        stroke-opacity: 0.9;
+        @apply --chart-line;
+      }
+      #graphs .line:last-of-type {
+        stroke-opacity: 1;
+      }
+      .focus,
+      .delta {
+        color: var(--chart-line-color, var(--focus-color, currentColor));
+      }
+      #focus *:not(.dot),
+      #delta *:not(.dot) {
+        stroke: var(--chart-line-color, var(--focus-color, currentColor));
+        stroke-opacity: var(--focus-opacity, 0.75);
+        stroke-dasharray: 1;
+        stroke-width: 1.5px;
+      }
+      marker path {
+        fill: var(--chart-line-color, var(--focus-color, currentColor));
+      }
+      #zoom {
+        cursor: default;
+        fill: currentColor;
+        fill-opacity: 0.001;
+        stroke: none;
+        pointer-events: all;
+      }
+      .dot {
+        fill-opacity: 0.9;
+        cursor: pointer;
+        stroke: #000;
+        stroke-opacity: 0.75;
+        stroke-width: 1px;
+        pointer-events: all;
+        transition: fill 100ms linear;
+      }
+      .dot:hover {
+        fill-opacity: 1;
+      }
+      .selectbox > * {
+        flex: 1 0 auto;
+        padding: 0.6em 0.3em;
+        font-size: inherit !important;
+      }
+      .selectbox {
+        padding: 0;
+      }
+      icon-button {
+        background: rgba(255,255,255,0.0625);
+      }
+      .checkbox,
+      .selectbox,
+      .button {
+        text-align: left;
+        flex-shrink: 0;
+        position: relative;
+      }
+      #options {
+        position: absolute;
+        --drawer-width: 12em;
+        --drawer-background: rgba(255,255,255,0.5);
+        --drawer-scrim-background: var(--options-scrim-background, rgba(0,0,0,0.25));
+        --drawer-content: {
+          padding: 0;
+          color: var(--primary-text-color);
+        };
+      }
+      .options-content  {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        font-size: 0.8em;
+        padding: 0.75em;
+        overflow-x: hidden;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .options-content > * {
+        margin-bottom: 0.4em
+      }
+
+      .selectbox > select {
+        opacity: 1;
+      }
+
+      :host(:not([without-mixmode])) #delta .line,
+      :host(:not([without-mixmode])) #focus .line,
+      :host(:not([without-mixmode])) marker > path,
+      :host(:not([without-mixmode])) .grid .tick line {
+        mix-blend-mode: exclusion;
+        pointer-events: none;
+      }
+
+      svg text {
+        fill: var(--chart-text-color, var(--primary-text-color));
+        stroke: currentColor;
+        stroke-width: 0.5px;
+        stroke-opacity: 0.2;
+        font-size: var(--chart-text-size, 11px) !important;
+        letter-spacing: -0.025em;
+        font-family: inherit !important;
+        cursor: inherit;
+        -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;
+      }
+
+      svg text.info {
+        fill: var(--primary-text-color);
+        pointer-events: none;
+      }
+
+      .draggable {
+        cursor: -webkit-grab;
+        cursor: grab;
+      }
+
+      .draggable.dragged {
+        cursor: -webkit-grabbing;
+        cursor: grabbing;
+      }
+
+      .draggable * {
+        cursor: inherit !important;
+      }
+
+      #legend > .entry > rect {
+        stroke: currentColor;
+        stroke-width: 0.5px;
+        stroke-opacity: 0.5;
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+    </style>
+
+    <svg id="svg" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" preserveAspectRatio="xMinYMin meet" on-contextmenu="_resetZoom">
+      <defs id="defs">
+        <clipPath id="clip">
+          <rect x="0" y="0"></rect>
+        </clipPath>
+        <marker id="arrowToLeft" viewBox="0 0 20 10" refX="0" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+          <path d="M 20,0 L 0,5 L 20,10 Z" />
+        </marker>
+        <marker id="arrowToRight" viewBox="0 0 20 10" refX="20" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+          <path d="M 0,0 L 20,5 L 0,10 Z" />
+        </marker>
+        <marker id="stub" markerWidth="8" markerHeight="6" refX="6" refY="5" orient="auto" markerUnits="strokeWidth" viewBox="0 0 6 10">
+          <path d="M 5,10 M 4,0 H 6 V 10 H 4 Z"/>
+          <path d="M 3,5 M 0,4 H 6 V 6 H 0 Z"/>
+        </marker>
+        <filter id="solid">
+          <feFlood flood-color="#fff" result="out1" />
+          <feComposite in="SourceGraphic" in2="out1" operator="over" />
+        </filter>
+        <pattern id="circle" width="10" height="10" patternUnits="userSpaceOnUse">
+          <circle cx="5" cy="5" r="2"/>
+        </pattern>
+      </defs>
+      <g id="chart">
+        <rect id="plot" clip-path="url(#clip)"></rect>
+        <g class="grid" clip-path="url(#clip)">
+          <g id="gridX"></g>
+          <g id="gridY"></g>
+        </g>
+        <g id="graphs" clip-path="url(#clip)">
+          <g id="area"></g>
+          <g id="line"></g>
+        </g>
+        <rect id="zoom" x="0" y="0" clip-path="url(#clip)"></rect>
+        <g id="axis"></g>
+        <g hidden$="[[hideInfo]]">
+          <g id="delta" hidden>
+            <line id="deltaX" class="line x" marker-start="url(#arrowToLeft)" marker-end="url(#arrowToRight)"></line>
+            <line id="deltaY" class="line y" marker-start="url(#arrowToLeft)" marker-end="url(#arrowToRight)"></line>
+            <circle id="deltaDot" class="dot"></circle>
+          </g>
+          <g id="focus" hidden>
+            <line id="focusLineX" class="line x" x1="0" marker-start="url(#stub)" marker-end="url(#arrowToRight)"></line>
+            <line id="focusLineY" class="line y" marker-start="url(#stub)" marker-end="url(#arrowToRight)"></line>
+            <circle id="focusDot" class="dot"></circle>
+          </g>
+          <g id="info">
+            <text class="focus info" x="0" y="0" filter="url(#solid)" font-size="10" hidden></text>
+            <text class="delta info x" x="0" y="0" filter="url(#solid)" font-size="10" hidden></text>
+            <text class="delta info y" x="0" y="0" filter="url(#solid)" font-size="10" hidden></text>
+          </g>
+        </g>
+        <g id="legend" hidden$="[[hideLegend]]"></g>
+      </g>
+    </svg>
+
+    <drawer-element id="options" opened="{{showControl}}" align="right" stretch scrim>
+      <div class="options-content">
+        <div class="selectbox" title$="[[localize('chart', 'interpolation')]]">
+          <select value="{{interpolation::change}}">
+            <option value="curveLinear">curveLinear</option>
+            <option value="curveBasis">curveBasis</option>
+            <option value="curveNatural">curveNatural</option>
+            <option value="curveCardinal">curveCardinal</option>
+            <option value="curveCatmullRom">curveCatmullRom</option>
+            <option value="curveStep">curveStep</option>
+            <option value="curveStepAfter">curveStepAfter</option>
+            <option value="curveStepBefore">curveStepBefore</option>
+          </select>
+        </div>
+        <div class="selectbox" title$="[[localize('chart', 'scaling', 'y')]]">
+          <select value="{{scalingY::change}}">
+            <option value="linear">linear</option>
+            <option value="√">√</option>
+            <option value="ln">ln</option>
+            <option value="log₂">log₂</option>
+            <option value="log₁₀">log₁₀</option>
+          </select>
+        </div>
+        <div class="selectbox" title$="[[localize('chart', 'modus', 'description')]]">
+          <select value="{{modus::change}}">
+            <option value="hold">[[localize('chart', 'modus', 'hold')]]</option>
+            <option value="zoom">[[localize('chart', 'modus', 'zoom')]]</option>
+            <option value="delta">[[localize('chart', 'modus', 'delta')]]</option>
+          </select>
+        </div>
+        <div class="checkbox">
+          <input type="checkbox" checked="{{multiAxesX::change}}">
+          [[localize('chart', 'multi-axes', 'x')]]
+        </div>
+        <div class="checkbox">
+          <input type="checkbox" checked="{{multiAxesY::change}}">
+          [[localize('chart', 'multi-axes', 'y')]]
+        </div>
+        <div class="checkbox">
+          <input type="checkbox" checked="{{draggable::change}}">
+          [[localize('chart', 'draggable')]]
+        </div>
+        <div class="checkbox">
+          <input type="checkbox" checked="{{brushToZoom::change}}">
+          [[localize('chart', 'brush-to-zoom')]]
+        </div>
+        <div class="checkbox">
+          <input type="checkbox" checked="{{!hideInfo::change}}">
+          [[localize('chart', 'show-info')]]
+        </div>
+        <div class="button" on-click="_openExportDialog" hidden$="[[exportButtonHidden]]">
+          <iron-icon icon="file-download"></iron-icon>
+          [[localize('chart', 'export')]]
+        </div>
+      </div>
+    </drawer-element>
+
+    <div id="control" class="right bottom" hidden$="[[controlButtonsHidden]]" on-mouseenter="_debouncedHideInfo">
+      <icon-button icon="tune" on-click="toggleOptions" title$="[[localize('options')]]"></icon-button>
+      <icon-button icon="filter-center-focus" on-click="_resetZoom" title$="[[localize('reset-zoom')]]"></icon-button>
+      <icon-button icon="[[fullscreenIcon]]" on-click="toggleFullscreen" title$="[[localize('fullscreen', fullscreen)]]"></icon-button>
+    </div>
+
+    <template is="dom-if" if="[[multi]]" restamp>
+      <template is="dom-repeat" items="[[items]]">
+        <device-graph item="[[item]]" interpolation="[[interpolation]]" locale-date="[[localeDate]]" locale-number=[[localeNumber]] range-x=[[rangeX]] range-y=[[rangeY]] no-link="[[!opened]]" scaling-y="[[scalingY]]" scaling-x="[[scalingX]]"></device-graph>
+      </template>
+    </template>
+    <template is="dom-if" if="[[!multi]]" restamp>
+      <device-graph item="[[item]]" interpolation="[[interpolation]]" locale-date="[[localeDate]]" locale-number=[[localeNumber]] range-x=[[rangeX]] range-y=[[rangeY]] no-link="[[!opened]]" scaling-y="[[scalingY]]" scaling-x="[[scalingX]]"></device-graph>
+    </template>
+  </template>
+  <script>
+    class DeviceChart extends Polymer.mixinBehaviors(
+      [Polymer.IronResizableBehavior], WebvisualMixins.AxesMixin(WebvisualMixins.FullscreenMixin(WebvisualMixins.LocalizeMixin(Polymer.Element)))) {
+
+      static get is() {
+        return 'device-chart';
+      }
+
+      static get properties() {
+        return {
+
+          opened: {
+            type: Boolean
+          },
+
+          hasGrid: {
+            type: Boolean,
+            value: true
+          },
+
+          margin: {
+            type: Object,
+            value: function() {
+              return {top: 10, right: 5, bottom: 5, left: 5}
+            }
+          },
+
+          multiAxesX: {
+            type: Boolean,
+            value: false
+          },
+
+          multiAxesY: {
+            type: Boolean,
+            value: true
+          },
+
+          interpolation: {
+            type: String,
+            value: 'curveLinear',
+            observer: '_interpolationChanged'
+          },
+
+          item: {
+            type: Object
+          },
+
+          items: {
+            type: Array
+          },
+
+          multi: {
+            type: Boolean,
+            value: false
+          },
+
+          showControl: {
+            type: Boolean,
+            value: false
+          },
+
+          hideInfo: {
+            type: Boolean,
+            value: false
+          },
+
+          exportButtonHidden: {
+            type: Boolean,
+            value: false
+          },
+
+          controlButtonsHidden: {
+            type: Boolean,
+            value: false
+          },
+
+          autoHideInfoDisabled: {
+            type: Boolean,
+            value: false
+          },
+
+          modus: {
+            type: String,
+            value: 'delta',
+            observer: '_modusChanged'
+          },
+
+          /**
+           * folder for date/time-format file
+           */
+          localesUrlPrefix: {
+            type: Array,
+            value: function() {
+              return [
+                '/locales/ui/',
+                '/locales/format/'
+              ]
+            }
+          }
+        }
+      }
+
+      constructor() {
+        super();
+        this._width = 0;
+        this._height = 0;
+        this._graphs = new Set();
+      }
+
+      get _self() {
+        return this;
+      }
+
+      static get observers() {
+        return [
+          '_localizeChanged(localize)',
+          '_multiAxesChanged(multiAxesX, multiAxesY)',
+        ]
+      }
+
+      _localizeChanged(localize) {
+        this.set('localeDate', localize('date'));
+        this.set('localeNumber', localize('number'));
+      }
+
+      _fireResize() {
+        this.dispatchEvent(new CustomEvent('iron-resize', {
+          bubbles: false,
+          composed: true,
+          node: this
+        }));
+        this.sizeChanged();
+      }
+
+      connectedCallback() {
+        super.connectedCallback();
+        this._buildLayout();
+      }
+
+      _assignNodes() {
+        this._svg = d3.select(this.$.svg);
+        this._chart = d3.select(this.$.chart);
+        this._axisInsertionPoint = d3.select(this.$.axis);
+        this._area = d3.select(this.$.area);
+        this._line = d3.select(this.$.line);
+        this._defs = d3.select(this.$.defs);
+        this.gridX = d3.select(this.$.gridX);
+        this.gridY = d3.select(this.$.gridY);
+        this._focus = d3.select(this.$.focus);
+        this._focusLineX = d3.select(this.$.focusLineX);
+        this._focusLineY = d3.select(this.$.focusLineY);
+        this._focusDot = d3.select(this.$.focusDot);
+        this._info = this._chart.select('text.focus.info');
+        this._infoDeltaX = this._chart.select('text.delta.info.x');
+        this._infoDeltaY = this._chart.select('text.delta.info.y');
+        this._delta = d3.select(this.$.delta);
+        this._deltaX = d3.select(this.$.deltaX);
+        this._deltaY = d3.select(this.$.deltaY);
+        this._deltaDot = d3.select(this.$.deltaDot);
+        this._zoom = d3.select(this.$.zoom);
+        this._legend = d3.select(this.$.legend);
+        this._graphs.forEach(g => {
+          g._assignNodes();
+        });
+      }
+
+      _buildLayout() {
+        // console.log('_buildLayout');
+        this._assignNodes();
+        this._svg.attr('height', null)
+          .attr('width', null);
+
+        this.axisX = this._computeAxisNode(this._axisInsertionPoint, this.axisOrientX, '', this.axisX)
+          .classed('main', true)
+          .attr('hidden', this.multiAxesX ? true : null);
+        this.axisY = this._computeAxisNode(this._axisInsertionPoint, this.axisOrientY, '', this.axisY)
+          .classed('main', true)
+          .attr('hidden', this.multiAxesY ? true : null);
+        this.axisGeneratorX = this._computeAxisGenerator(this.axisOrientX, this.scaleX, this.scalingX, this.scaleBaseX);
+        this.axisGeneratorY = this._computeAxisGenerator(this.axisOrientY, this.scaleY, this.scalingY, this.scaleBaseY);
+
+        this._focusDot
+          .on('mouseenter', () => {
+            if (!this.autoHideInfoDisabled && this._activeHideInfoJob) {
+              clearTimeout(this._activeHideInfoJob);
+            }
+          }, {
+            passive: true
+          })
+          .on('mouseleave', this._debouncedHideInfo.bind(this), {
+            passive: true
+          })
+          .on('click', this._dotClicked.bind(this), {
+            passive: true
+          });
+
+        this._zoomBehavior = d3.zoom()
+          .scaleExtent([0.95, Infinity])
+          .on("zoom", this._onZoomed.bind(this));
+
+        this._zoom.call(this._zoomBehavior);
+
+        this._chart
+          .on('mouseenter touchstart', this._showInfo.bind(this), {
+            passive: true
+          })
+          .on('mouseleave touchend', this._debouncedHideInfo.bind(this), {
+            passive: true
+          })
+          .on('mousemove', () => {
+            if (this.hideInfo) return;
+
+            this._showInfo();
+            if (this.modus === 'hold' && this._fixedValue) {
+              this._debouncedHideInfo(this);
+              return;
+            }
+
+            const m = d3.mouse(this._chart.node());
+
+            requestAnimationFrame(() => {
+              let closestGraph, closestPoint, closestDistance, fill;
+              this._graphs.forEach(g => {
+                if (g.values && g.values.length) {
+                  const d = g._closestPoint(m);
+                  const currentMin2 = Math.pow(m[0] - g.scaleX(d.x), 2) + Math.pow(m[1] - g.scaleY(d.y), 2); // in px²
+                  if (closestDistance === undefined || currentMin2 < closestDistance) {
+                    closestDistance = currentMin2;
+                    closestPoint = d;
+                    closestGraph = g;
+                  }
+                }
+              });
+              if (closestPoint) {
+                fill = '#fff';
+                if (closestGraph.item.threshold) {
+                  switch (closestGraph.checkExceedingState(closestPoint)) {
+                    case 1:
+                      fill = closestGraph.getComputedStyleValue('--device-state-exceeds-color') || '#F20C0C';
+                      break;
+                    case -1:
+                      fill = closestGraph.getComputedStyleValue('--device-state-deceeds-color') || '#F20C0C';
+                      break;
+                  }
+                }
+                this._focusedValue = closestPoint;
+                this._focusedValue.g = closestGraph;
+                this._focusedValue._left = this.multiAxesY ? closestGraph.axisY._left : this.axisY._left;
+                this._focusedValue._top = this.multiAxesX ? closestGraph.axisX._top : this.axisX._top;
+                this._focusDot.datum(closestPoint)
+                  .attr('fill', fill)
+                  .attr('r', closestGraph.dotRadius);
+                this._showInfo();
+                this._moveInfo(closestPoint);
+              } else {
+                this._debouncedHideInfo();
+              }
+            });
+          }, {
+            passive: true
+          });
+
+        this._updateStyleScope();
+
+        this._isAttached = true;
+
+        this._modusChanged(this.modus);
+        this._multiAxesChanged(this.multiAxesX, this.multiAxesY);
+        this.sizeChanged();
+      }
+
+      reset() {
+        // this.opened = false;
+        this.set('item', {});
+        this.set('items', []);
+        this.set('exceeding', []);
+        this._graphs.clear();
+        this._debouncedHideInfo();
+        this._fixedValue = null;
+        this._focusedValue = null;
+      }
+
+      sizeChanged() {
+        // only resize if initialized
+        if (!(this.opened && this._isAttached)) return;
+        if (this._activeSizeJob) {
+          cancelAnimationFrame(this._activeSizeJob);
+        }
+        this._activeSizeJob = setTimeout(() => {
+          this.sizeLayout();
+        }, 0);
+      }
+
+      sizeLayout() {
+        if (!(this.opened && this._isAttached)) return;
+        const bRect = this.$.svg.getBoundingClientRect();
+
+        if (this._activeSizeJob) {
+          clearTimeout(this._activeSizeJob);
+          this._activeSizeJob = null;
+        }
+
+        if (bRect.height === 0 || bRect.width === 0) {
+          requestAnimationFrame(() => {
+            this.sizeChanged();
+          });
+          return;
+        }
+
+        this._debouncedHideInfo();
+
+        this._chart._top = 0;
+        this._chart._right = 0;
+        this._chart._bottom = 0;
+        this._chart._left = 0;
+        let size;
+        const q = [],
+          p = [];
+
+        this._graphs.forEach(g => {
+          if (g._isAttached && g.scaleX && g.scaleY) {
+            let size;
+            if (!g.axisX.attr('hidden')) {
+              size = g.axisX.classed('expanded') ? g.axisSizeX : g.tickSize + g.collapsedAxisMargin;
+              q.push(this._incremAxisPosition(g.axisX, g.axisOrientX, size));
+            }
+            if (!g.axisY.attr('hidden')) {
+              size = g.axisY.classed('expanded') ? g.axisSizeY : g.tickSize + g.collapsedAxisMargin;
+              q.push(this._incremAxisPosition(g.axisY, g.axisOrientY, size));
+            }
+          }
+        })
+        if (!this.axisX.attr('hidden')) {
+          size = this.axisX.classed('expanded') ? this.axisSizeX : this.tickSize + this.collapsedAxisMargin;
+          q.push(this._incremAxisPosition(this.axisX, this.axisOrientX, size));
+        }
+        if (!this.axisY.attr('hidden')) {
+          size = this.axisY.classed('expanded') ? this.axisSizeY : this.tickSize + this.collapsedAxisMargin;
+          q.push(this._incremAxisPosition(this.axisY, this.axisOrientY, size));
+        }
+
+        Promise.all(q).then(() => {
+
+          this._width = Math.abs(bRect.width - Math.abs(this._chart._left || 0) - Math.abs(this._chart._right || 0) - (this.margin.left || 0) - (this.margin.right || 0));
+          this._height = Math.abs(bRect.height - Math.abs(this._chart._bottom || 0) - Math.abs(this._chart._top || 0) - (this.margin.top || 0) - (this.margin.bottom || 0));
+
+          this.set('rangeX', [0, this._width]);
+          this.set('rangeY', [this._height, 0]);
+
+          this._zoom.attr('height', this._height).attr('width', this._width);
+          this._zoomBehavior
+            .translateExtent([
+              [0, 0],
+              [this._width, this._height]
+            ])
+            .extent([
+              [0, 0],
+              [this._width, this._height]
+            ])
+          // this._zoom.call(this._zoomBehavior.transform, d3.zoomIdentity);
+
+          this._graphs.forEach(g => {
+            if (g._isAttached && g.scaleX && g.scaleY) {
+              if (!g.axisX.attr('hidden')) {
+                p.push(this._finalizeAxisPosition(g.axisX, g.axisOrientX, this._width, this._height));
+              }
+              if (!g.axisY.attr('hidden')) {
+                p.push(this._finalizeAxisPosition(g.axisY, g.axisOrientY, this._width, this._height));
+              }
+            }
+          })
+          if (!this.axisX.attr('hidden')) {
+            p.push(this._finalizeAxisPosition(this.axisX, this.axisOrientX, this._width, this._height));
+          }
+          if (!this.axisY.attr('hidden')) {
+            p.push(this._finalizeAxisPosition(this.axisY, this.axisOrientY, this._width, this._height));
+          }
+
+          Promise.all(p).then(() => {
+            // Limiting Projection to Margin
+            this._svg.select('clipPath rect').transition()
+              .attr('width', this._width)
+              .attr('height', this._height);
+
+            this._chart.select('rect#plot').transition()
+              .attr('width', this._width)
+              .attr('height', this._height);
+
+            const left = (-this._chart._left || 0) + (this.margin.left || 0),
+              top = (-this._chart._top || 0) + (this.margin.top || 0);
+            // const right = (-this._chart._right || 0) - (this.margin.right || 0),
+            //   bottom = (-this._chart._bottom || 0) - (this.margin.bottom || 0);
+            this._chart.transition().attr('transform', 'translate(' + left + ',' + top + ')');
+            this._focusLineY.attr('y1', this._height);
+
+            this._graphs.forEach(g => {
+              if (g._isAttached && g.scaleX && g.scaleY) {
+                if (!g.axisX.attr('hidden')) {
+                  g.axisGeneratorX = g._computeAxisGenerator.call(g, g.axisOrientX, g.scaleX, g.scalingX, g.scaleBaseX).ticks(g.ticksX).tickSize(g.tickSize).tickFormat(g.axisX.classed('expanded') ? g._computeFormatFn(g.scalingX, g.scaleBaseX) :
+                    '');
+                  g._updateAxisBrushGenerator.call(g.axisBrushGeneratorX, this.rangeX, g.axisOrientX);
+                  if (this.brushToZoom) g.axisX.select('.brush').raise().call(g.axisBrushGeneratorX);
+                  g.axisX.attr('transform', 'translate(' + (g.axisX._left || 0) + ',' + (g.axisX._top || 0) + ')');
+                }
+                if (!g.axisY.attr('hidden')) {
+                  g.axisGeneratorY = g._computeAxisGenerator.call(g, g.axisOrientY, g.scaleY, g.scalingY, g.scaleBaseY).ticks(g.ticksY).tickSize(g.tickSize).tickFormat(g.axisY.classed('expanded') ? g._computeFormatFn(g.scalingY, g.scaleBaseY) :
+                    '');
+                  g._updateAxisBrushGenerator.call(g.axisBrushGeneratorY, this.rangeY, g.axisOrientY);
+                  if (this.brushToZoom) g.axisY.select('.brush').raise().call(g.axisBrushGeneratorY);
+                  g.axisY.attr('transform', 'translate(' + (g.axisY._left || 0) + ',' + (g.axisY._top || 0) + ')');
+                }
+              }
+            })
+
+            if (!this.axisX.attr('hidden') && this.scaleX) {
+              this.axisGeneratorX = this._computeAxisGenerator(this.axisOrientX, this.scaleX, this.scalingX, this.scaleBaseX).ticks(this.ticksX).tickSize(this.tickSize).tickFormat(this.axisX.classed('expanded') ? this._computeFormatFn(
+                this.scalingX, this.scaleBaseX) : '');
+              this._updateAxisBrushGenerator.call(this.axisBrushGeneratorX, this.rangeX, this.axisOrientX);
+              if (this.brushToZoom) this.axisX.select('.brush').raise().call(this.axisBrushGeneratorX);
+              this.axisX.attr('transform', 'translate(' + (this.axisX._left || 0) + ',' + (this.axisX._top || 0) + ')');
+            }
+            if (!this.axisY.attr('hidden') && this.scaleY) {
+              this.axisGeneratorY = this._computeAxisGenerator(this.axisOrientY, this.scaleY, this.scalingY, this.scaleBaseY).ticks(this.ticksY).tickSize(this.tickSize).tickFormat(this.axisY.classed('expanded') ? this._computeFormatFn(
+                this.scalingY, this.scaleBaseY) : '');
+              this._updateAxisBrushGenerator.call(this.axisBrushGeneratorY, this.rangeY, this.axisOrientY);
+              if (this.brushToZoom) this.axisY.select('.brush').raise().call(this.axisBrushGeneratorY);
+              this.axisY.attr('transform', 'translate(' + (this.axisY._left || 0) + ',' + (this.axisY._top || 0) + ')');
+            }
+
+            this._updateStyleScope();
+
+            if (!this.domainX || !this.domainY || this.domainX.some(e => {
+                return e === undefined || e === null;
+              }) || this.domainY.some(e => {
+                return e === undefined || e === null;
+              })) {
+              this.redraw(true);
+            } else {
+              this.redraw();
+            }
+          })
+        })
+      }
+
+      _incremAxisPosition(node, orient, size) {
+        if (orient === 'left') {
+          node._left = this._chart._left;
+          node._right = 0;
+          this._chart._left -= size;
+        } else if (orient === 'right') {
+          node._left = 0;
+          node._right = this._chart._right;
+          this._chart._right += size;
+        } else {
+          node._left = 0;
+          node._right = 0;
+        }
+        if (orient === 'top') {
+          node._bottom = 0;
+          node._top = this._chart._top;
+          this._chart._top -= size;
+        } else if (orient === 'bottom') {
+          node._bottom = this._chart._bottom;
+          node._top = 0;
+          this._chart._bottom += size;
+        } else {
+          node._bottom = 0;
+          node._top = 0;
+        }
+        return true;
+      }
+
+      _finalizeAxisPosition(node, orient, width, height) {
+        node._left += node._right;
+        node._top += node._bottom;
+        node._bottom = 0;
+        node._right = 0;
+        if (orient === 'right') {
+          node._left += width;
+        } else if (orient === 'bottom') {
+          node._top += height;
+        }
+        return true;
+      }
+
+      _generateGrid() {
+        if (!(this.scaleX && this.scaleY)) {
+          return;
+        }
+        if (this._gridBuildJob) {
+          clearTimeout(this._gridBuildJob);
+        }
+        this._gridBuildJob = setTimeout(() => {
+          if (this.hasGrid && (!this.multiAxesY || this._graphs.size <= 1)) {
+            this.gridGeneratorY = d3.axisLeft(this.scaleY)
+                    .ticks((this.ticksY * 2) || 10)
+                    .tickSize(-this._width)
+                    .tickFormat('');
+            this.gridY.call(this.gridGeneratorY)
+                    .attr('font-family', null)
+                    .attr('font-size', null)
+                    .attr('text-anchor', null)
+            this.gridY.attr('hidden', null);
+          } else {
+            this.gridY.attr('hidden', true);
+          }
+          if (this.hasGrid && (!this.multiAxesX || this._graphs.size <= 1)) {
+            this.gridGeneratorX = d3.axisBottom(this.scaleX)
+                    .ticks((this.ticksX * 2) || 10)
+                    .tickSize(this._height)
+                    .tickFormat('');
+            this.gridX.call(this.gridGeneratorX)
+                    .attr('font-family', null)
+                    .attr('font-size', null)
+                    .attr('text-anchor', null);
+            this.gridX.attr('hidden', null);
+            this.gridX.call(this.gridGeneratorX.scale(this.scaleX));
+          } else {
+            this.gridX.attr('hidden', true);
+          }
+          this._gridBuildJob = null;
+        }, 0)
+      }
+
+      _redomain() {
+        if (!this._isAttached) return;
+        if (this._activeRedrawJob) {
+          clearTimeout(this._activeRedrawJob);
+        }
+        // console.log('_redomain')
+        Promise.resolve(this._getDomain.call(this))
+          .then(this.redraw.bind(this, false))
+          .catch(err => {
+            if (err) {
+              console.warn(err);
+            }
+          });
+      }
+
+      redraw(force) {
+        if (!(this._isAttached && this.scaleX && this.scaleY)) return;
+
+        if (force) {
+          // console.log('force')
+          this._redomain();
+          return;
+        }
+        // console.log('chart redraw')
+        // async redrawing
+        if (this._activeRedrawJob) {
+          clearTimeout(this._activeRedrawJob);
+        }
+        this._activeRedrawJob = setTimeout(() => {
+
+          if (!this.axisX.attr('hidden')) {
+            this.axisX.transition().call(this.axisGeneratorX).attr('transform', 'translate(' + (this.axisX._left || 0) + ',' + (this.axisX._top || 0) + ')');
+          }
+          if (!this.axisY.attr('hidden')) {
+            this.axisY.transition().call(this.axisGeneratorY).attr('transform', 'translate(' + (this.axisY._left || 0) + ',' + (this.axisY._top || 0) + ')');
+          }
+
+          this._graphs.forEach(g => {
+            if (g._isAttached && g.scaleX && g.scaleY) {
+              if (!g.axisX.attr('hidden')) {
+                g.axisX.transition().call(g.axisGeneratorX).attr('transform', 'translate(' + (g.axisX._left || 0) + ',' + (g.axisX._top || 0) + ')');
+              } else {
+                g.set('domainX', this.domainX);
+              }
+              if (!g.axisY.attr('hidden')) {
+                g.axisY.transition().call(g.axisGeneratorY).attr('transform', 'translate(' + (g.axisY._left || 0) + ',' + (g.axisY._top || 0) + ')');
+              } else {
+                g.set('domainY', this.domainY);
+              }
+              g.redraw();
+            }
+          })
+
+          if (this.hasGrid) this._generateGrid();
+
+          this._updateStyleScope();
+          this._updateInfo();
+        }, 0);
+      }
+
+      _updateStyleScope() {
+        this._svg.selectAll('g,line,text,path,rect,circle')
+          .classed('style-scope device-chart', true);
+      }
+
+      _multiAxesChanged(multiAxesX, multiAxesY) {
+        if (!this._isAttached) return;
+        let hidden;
+        this._graphs.forEach(g => {
+          if (g._isAttached) {
+            hidden = multiAxesX ? null : true;
+            g.axisX.attr('hidden', hidden);
+            hidden = multiAxesY ? null : true;
+            g.axisY.attr('hidden', hidden);
+          }
+        })
+        hidden = multiAxesX ? true : null;
+        this.axisX.attr('hidden', hidden);
+        hidden = multiAxesY ? true : null;
+        this.axisY.attr('hidden', hidden);
+        hidden = (!multiAxesY && !multiAxesX) ? true : null;
+        this.axisX.select('.brush').attr('hidden', hidden);
+        this.axisY.select('.brush').attr('hidden', hidden);
+        this._generateGrid();
+        this._redomain();
+        this.sizeChanged();
+      }
+
+      _addGraph(g) {
+        if (this._graphs.has(g)) {
+          return;
+        }
+        this._graphs.add(g);
+        console.log('add', g.item.mount, this._graphs.size);
+        this._updateLegendEntries();
+        this.sizeChanged();
+      }
+
+      _removeGraph(g) {
+        this._graphs.delete(g);
+        console.log('remove', g.item.mount, this._graphs.size);
+        if (this._graphs.size === 0) {
+          this.set('domainX', [null, null])
+          this.set('domainY', [null, null])
+        }
+        g = null;
+        this._fixedValue = null;
+        this._focusedValue = null;
+        this._updateLegendEntries();
+        this.sizeChanged();
+      }
+
+      _updateLegendEntries() {
+        const items = [];
+        this._graphs.forEach(g => {
+          items.push(g.item);
+        })
+        console.log(items);
+        items.sort((a, b) => { a.mount.localeCompare(b.mount)});
+
+        const rectSize = 18;
+        const margin = 4;
+        const r = 2;
+        const entries = this._legend.selectAll('.entries')
+                                      .data(items);
+
+        const newEntries = entries.enter()
+                                    .append('g')
+                                      .classed('entry', true)
+                                      .attr('transform', function(d, i) {
+                                        return `translate(0, ${i * (rectSize + margin)})`;
+                                      })
+        newEntries.append('rect')
+                    .attr('height', rectSize)
+                    .attr('width', rectSize)
+                    .attr('rx', r)
+                    .attr('ry', r)
+                    .attr('fill', d => { return d.color || '#fff' });
+        newEntries.append('text')
+                    .attr('x', rectSize + margin)
+                    .attr('y', rectSize - margin)
+                    .text( d => {
+                      return d.mount;
+                    });
+
+        entries.exit()
+                .remove()
+
+        this._updateStyleScope();
+      }
+
+      _getDomain() {
+        // console.log('_getDomain');
+        return new Promise((resolve, reject) => {
+          const p = [],
+            q = [];
+          this._graphs.forEach(g => {
+            p.push(g._getDomain('x', this.multiAxesX))
+            q.push(g._getDomain('y', this.multiAxesY))
+          })
+          Promise.all(p)
+            .then(res => {
+              let min, max, domain;
+              for (let i = 0; i < res.length; i++) {
+                min = (min === undefined || min > res[i].domain[0]) ? res[i].domain[0] : min;
+                max = (max === undefined || max < res[i].domain[1]) ? res[i].domain[1] : max;
+              }
+              if (min === undefined || max === undefined) {
+                resolve();
+              }
+              domain = [min, max];
+              this.set('domainX', domain);
+              this.scaleX.domain(domain);
+              if (this.multiAxesX === false) {
+                this._graphs.forEach(g => {
+                  g.axisX._isBrushed = false;
+                  g.set('domainX', domain);
+                  g.scaleX.domain(domain);
+                })
+              }
+              Promise.all(q)
+                .then(res => {
+                  let min, max, domain;
+                  for (let i = 0; i < res.length; i++) {
+                    min = (min === undefined || min > res[i].domain[0]) ? res[i].domain[0] : min;
+                    max = (max === undefined || max < res[i].domain[1]) ? res[i].domain[1] : max;
+                  }
+                  if (min === undefined || max === undefined) {
+                    resolve();
+                  }
+                  domain = [min, max];
+                  this.set('domainY', domain);
+                  if (this.multiAxesY === false) {
+                    this._graphs.forEach(g => {
+                      g.axisY._isBrushed = false;
+                      g.set('domainY', domain);
+                    })
+                  }
+                  resolve();
+                })
+                .catch(error => {
+                  reject(error);
+                })
+            })
+            .catch(error => {
+              reject(error);
+            });
+        });
+      }
+
+      insertValues(data) {
+        this._graphs.forEach(g => {
+          if (g && g._isAttached && g.item && g.item.mount && data[g.item.mount])
+            g.insertValues(data[g.item.mount]);
+        })
+      }
+
+      clearValues() {
+        this._graphs.forEach(g => {
+          if (g && g._isAttached)
+            g.clearValues();
+        })
+      }
+
+      _draggableChanged(draggable) {
+        super._draggableChanged(draggable);
+        this._graphs.forEach(g => {
+          g.draggable = draggable;
+        });
+      }
+
+      _brushToZoomChanged(brushToZoom) {
+        super._brushToZoomChanged(brushToZoom);
+        this._graphs.forEach(g => {
+          g.brushToZoom = brushToZoom;
+        });
+      }
+
+      _moveInfo(d) {
+        if (Number.isFinite(d.g.scaleY(d.y))) {
+          const formatX = this._computeFormatFn.call(d.g, d.g.scalingX, d.g.scaleBaseX),
+            formatY = this._computeFormatFn.call(d.g, d.g.scalingY, d.g.scaleBaseY),
+            fixP = this._fixedValue;
+          this._info.text(formatX(d.x) + ' ' + formatY(d.y) + ' ' + (d.g.item.unit || ''));
+          if (this.modus === 'delta' && fixP) {
+            const diffX = Math.abs(fixP.x - d.x),
+              diffY = Math.abs(fixP.y - d.y),
+              sameUnit = (d.g.item.unit === fixP.g.item.unit);
+            this._infoDeltaX.text((d.g.scalingX === 'time' ? d.g.formatTimeAbsolute : formatX)(diffX) + ((sameUnit && d.g.scalingX !== 'time') ? (' ' + d.g.item.unit) : ''));
+            this._infoDeltaY.text((d.g.scalingY === 'time' ? d.g.formatTimeAbsolute : formatY)(diffY) + ((sameUnit && d.g.scalingY !== 'time') ? (' ' + d.g.item.unit) : ''));
+          }
+          this._updateInfo();
+        }
+      }
+
+      _showInfo() {
+        if (this.hideInfo) return;
+
+        if (!this.autoHideInfoDisabled && this._activeHideInfoJob) {
+          clearTimeout(this._activeHideInfoJob);
+        }
+
+        if (this._graphs.size === 0) return;
+
+        this._info.attr('hidden', null);
+        this._focus.attr('hidden', null);
+        if (this.modus === 'delta' && this._fixedValue) {
+          this._showDelta();
+        }
+      }
+
+      _showDelta() {
+        this._infoDeltaX.attr('hidden', null);
+        this._infoDeltaY.attr('hidden', null);
+        this._delta.attr('hidden', null);
+      }
+
+      _debouncedHideInfo() {
+        if (this.autoHideInfoDisabled) return;
+
+        if (this._activeHideInfoJob) {
+          clearTimeout(this._activeHideInfoJob);
+        }
+        this._activeHideInfoJob = setTimeout(() => {
+          this._hideInfo();
+          this._activeHideInfoJob = null;
+        }, 750);
+      }
+
+      _hideInfo() {
+        this._info.attr('hidden', '');
+        this._focus.attr('hidden', '');
+        this._hideDelta();
+        this._updateStyleScope();
+      }
+
+      _hideDelta() {
+        this._infoDeltaX.attr('hidden', '');
+        this._infoDeltaY.attr('hidden', '');
+        this._delta.attr('hidden', '');
+      }
+
+      _updateInfo() {
+        if (!this._focusedValue || this._info.attr('hidden') === '') return;
+
+        const focP = this._focusedValue;
+        const fixP = this._fixedValue;
+
+        let x, y, left, top;
+        if (focP) {
+          x = focP.g.scaleX(+focP.x);
+          y = focP.g.scaleY(+focP.y);
+          left = focP._left;
+          top = focP._top;
+        } else if (fixP) {
+          x = fixP.g.scaleX(+focP.x);
+          y = fixP.g.scaleY(+focP.y);
+          left = fixP._left;
+          top = fixP._top;
+        } else {
+          return;
+        }
+
+        this._alignText(this._info.node(), x, y, null, 1.5 * this._focusDot.attr('r'));
+        this._focusLineX.attr('x1', left).attr('x2', x).attr('y2', y).attr('y1', y);
+        this._focusLineY.attr('y1', top).attr('y2', y).attr('x2', x).attr('x1', x);
+        this._focusDot.attr('cy', y).attr('cx', x);
+
+        if (this.modus === 'delta') {
+          if (fixP && fixP.x !== undefined && fixP.y !== undefined && !(focP.x === fixP.x && focP.y === fixP.y)) {
+            const xFix = fixP.g.scaleX(+fixP.x),
+              yFix = fixP.g.scaleY(+fixP.y);
+            this._deltaX.attr('x1', x).attr('x2', xFix);
+            this._deltaY.attr('y1', y).attr('y2', yFix);
+            if (yFix < y) {
+              this._deltaY.attr('x1', x).attr('x2', x);
+              this._alignText(this._infoDeltaY.node(), x, (yFix + y) / 2, null, null, null, 'middle');
+            } else {
+              this._deltaY.attr('x1', xFix).attr('x2', xFix);
+              this._alignText(this._infoDeltaY.node(), xFix, (yFix + y) / 2, null, null, null, 'middle');
+            }
+            if (yFix < y || xFix < x) {
+              this._deltaX.attr('y1', yFix).attr('y2', yFix);
+              this._alignText(this._infoDeltaX.node(), (xFix + x) / 2, yFix, null, null, null, 'middle');
+            } else {
+              this._deltaX.attr('y1', y).attr('y2', y);
+              this._alignText(this._infoDeltaX.node(), (xFix + x) / 2, y, null, null, null, 'middle');
+            }
+            this._deltaDot.attr('cy', yFix).attr('cx', xFix);
+          } else {
+            this._hideDelta();
+          }
+        }
+
+        if (y > this._height || x < 0) {
+          this._focus.attr('hidden', '');
+          if (this.modus === 'delta' && fixP) {
+            this._delta.attr('hidden', '');
+          }
+        } else {
+          this._focus.attr('hidden', null);
+          if (this.modus === 'delta' && fixP) {
+            this._delta.attr('hidden', null);
+          }
+        }
+      }
+
+      _alignText(node, x, y, marginLeft, marginBottom, textAnchor, alignmentBaseline) {
+        marginLeft = marginLeft || 0;
+        marginBottom = marginBottom || 0;
+        const bbox = node.getBBox(),
+          height = this._height,
+          width = this._width;
+        let anchor = textAnchor || 'middle',
+          alignment = alignmentBaseline || 'ideographic',
+          limitLeft = marginLeft,
+          limitBottom = marginBottom;
+        switch (anchor) { // switch is not complete!
+          case 'middle':
+            limitLeft += (bbox.width / 2);
+            break;
+          case 'end ':
+            limitLeft += bbox.width;
+            break;
+        }
+        switch (alignment) { // switch is not complete!
+          case 'ideographic':
+            limitBottom += bbox.height;
+            break;
+          case 'middle':
+            limitBottom += (bbox.height / 2);
+            break;
+          case 'hanging':
+            limitBottom -= bbox.height;
+            break;
+        }
+
+        if (y - limitBottom <= 0) { // above top
+          alignment = 'hanging';
+          y = bbox.height;
+        } else if (y + limitBottom > height) {
+          alignment = 'ideographic';
+          y = height;
+        }
+
+        if (x + limitLeft >= width) { // beyond right
+          anchor = 'end';
+          x = width;
+        } else if (x - limitLeft <= 0) { // beyond left
+          anchor = 'start';
+          x = 0;
+        }
+        node.setAttribute('x', x + marginLeft);
+        node.setAttribute('y', y - marginBottom);
+        node.setAttribute('text-anchor', anchor);
+        node.setAttribute('alignment-baseline', alignment);
+      }
+
+      _modusChanged(modus) {
+        switch (modus) {
+          case 'zoom':
+
+            break;
+          case 'delta':
+
+            break;
+          case 'integral':
+
+            break;
+          default:
+
+        }
+        this._fixedValue = null;
+        this._focusedValue = null;
+      }
+
+      _dotClicked(d) {
+        const oldzoom = this._zoom.node().__zoom,
+          fP = this._fixedValue;
+        let x, y, scale, fill;
+        switch (this.modus) {
+          case 'hold':
+            if (!(fP && fP.x !== undefined && fP.y !== undefined && fP.x === d.x && fP.y === d.y)) {
+              this._fixedValue = d;
+              fill = (this.modus === 'hold' && d.g.item.color) ? d.g.item.color : '#fff';
+              console.log(fill);
+              if (d.g.item.threshold) {
+                switch (d.g.checkExceedingState(d)) {
+                  case 1:
+                    fill = d.g.getComputedStyleValue('--device-state-exceeds-color') || '#F20C0C';
+                    break;
+                  case -1:
+                    fill = d.g.getComputedStyleValue('--device-state-deceeds-color') || '#F20C0C';
+                    break;
+                }
+              }
+              this._focusDot.attr('fill', fill);
+            } else {
+              this._fixedValue = null;
+              this._focusDot.attr('fill', '#fff');
+              this._hideInfo();
+            }
+            break;
+          case 'zoom':
+            x = d.g.scaleX(+d.x) - this._width / 6;
+            y = (d.g.scaleY(+d.y) || 0) - this._height / 6;
+            scale = oldzoom.k * 3;
+            y = (oldzoom.y - y) / oldzoom.k;
+            x = (oldzoom.x - x) / oldzoom.k;
+            this._zoom.transition(300).call(this._zoomBehavior.transform, d3.zoomIdentity
+              .scale(scale)
+              .translate(x, y));
+            break;
+          case 'delta':
+            if (!(fP && fP.x !== undefined && fP.y !== undefined && fP.x === d.x && fP.y === d.y)) {
+              this._fixedValue = d;
+              this._deltaDot.datum(d)
+                .attr('cx', d => {
+                  return d.g.scaleX(d.x);
+                })
+                .attr('cy', d => {
+                  return d.g.scaleY(d.y);
+                })
+                .attr('r', this._focusDot.attr('r'))
+                .attr('fill', this._focusDot.attr('fill'));
+            } else {
+              this._fixedValue = null;
+              this._hideDelta();
+              this._deltaDot.attr('fill', '#fff');
+            }
+            break;
+        }
+        this._updateInfo();
+      }
+
+      closeMenu() {
+        this.showMenu = false;
+      }
+
+      _interpolationChanged(interpolation) {
+        this._graphs.forEach(g => {
+          if (g && g._isAttached)
+            g.set('interpolation', interpolation);
+        })
+        this.redraw();
+      }
+
+      _onAxisBrushEnd(key) {
+        if (d3.event.sourceEvent && d3.event.sourceEvent.type === "zoom") return; // ignore brush-by-zoom
+        const s = d3.event.selection;
+        if (!s) {
+          return;
+        }
+        if (!this.multiAxesY && !this.multiAxesX) {
+          if (key === 'x') this.axisX.select('.brush').call(this.axisBrushGeneratorX.move, null);
+          if (key === 'y') this.axisY.select('.brush').call(this.axisBrushGeneratorY.move, null);
+          return; // TODO: zoomm does not work correctly if brushing on all combined axes
+        }
+        const vertical = (key === 'y');
+        let domain, oldzoom, scale, y, x;
+        if (vertical) {
+          domain = s.map(this.scaleY.invert, this.scaleY).sort((a, b) => {
+            return a > b
+          });
+          this._graphs.forEach(g => {
+            g.scaleY.domain(domain).nice();
+            g.axisGeneratorY.scale(g.scaleY);
+          })
+          this.axisY._isBrushed = true;
+          this.scaleY.domain(domain).nice();
+          this.axisY.call(this.axisGeneratorY.scale(this.scaleY));
+          this.axisY.select('.brush').call(this.axisBrushGeneratorY.move, null);
+          oldzoom = this._zoom.node().__zoom;
+          scale = oldzoom.k * this._height / (s[1] - s[0]);
+          y = (oldzoom.y - s[0]) / oldzoom.k;
+          this._zoom.transition(300).call(this._zoomBehavior.transform, d3.zoomIdentity
+            .scale(scale)
+            .translate(0, y));
+        }
+        if (!vertical) {
+          domain = s.map(this.scaleX.invert, this.scaleX).sort((a, b) => {
+            return a > b
+          });
+          this._graphs.forEach(g => {
+            g.scaleX.domain(domain);
+            g.axisGeneratorX.scale(g.scaleX);
+          })
+          this.axisX._isBrushed = true;
+          this.scaleX.domain(domain);
+          this.axisX.call(this.axisGeneratorX.scale(this.scaleX));
+          this.axisX.select('.brush').call(this.axisBrushGeneratorX.move, null);
+          oldzoom = this._zoom.node().__zoom;
+          scale = oldzoom.k * this._width / (s[1] - s[0]);
+          x = (oldzoom.x - s[0]) / oldzoom.k;
+          this._zoom.transition(300).call(this._zoomBehavior.transform, d3.zoomIdentity
+            .scale(scale)
+            .translate(x, 0));
+        }
+        this._graphs.forEach(g => {
+          g.redraw();
+        })
+        this._updateInfo();
+      }
+
+      _onZoomed() {
+        if (d3.event.sourceEvent && d3.event.sourceEvent.type === 'brush') return; // ignore zoom-by-brush
+        const t = d3.event.transform;
+        if (!this.domainX || !this.domainY) {
+          return;
+        }
+        const x = d3.event.transform.rescaleX(this.scaleX.domain(this.domainX));
+        const y = d3.event.transform.rescaleY(this.scaleY.domain(this.domainY).nice());
+        let domain;
+        if (!this.multiAxesX) {
+          domain = x.domain();
+          this._graphs.forEach(g => {
+            if (g._isAttached && g.scaleX && g.scaleY) {
+              g.scaleX.domain(domain);
+              g.axisGeneratorX.scale(g.scaleX);
+            }
+          })
+          this.scaleX.domain(domain);
+          this.axisX.call(this.axisGeneratorX.scale(this.scaleX));
+          if (this.hasGrid) this.gridX.call(this.gridGeneratorX.scale(this.scaleX));
+        }
+        if (!this.multiAxesY) {
+          domain = y.domain();
+          this._graphs.forEach(g => {
+            if (g._isAttached && g.scaleX && g.scaleY) {
+              g.scaleY.domain(domain);
+              g.axisGeneratorY.scale(g.scaleY);
+            }
+          })
+          this.scaleY.domain(domain);
+          this.axisY.call(this.axisGeneratorY.scale(this.scaleY));
+          if (this.hasGrid) this.gridY.call(this.gridGeneratorY.scale(this.scaleY));
+        }
+        this._graphs.forEach(g => {
+          g.redraw();
+        })
+        this._isZoomed = !(t.k === 1 && t.x === 0 && t.y === 0);
+        this._updateInfo();
+      }
+
+      _onAxisClicked(axis) {
+        if (this._activeToggleAxisJob) {
+          clearTimeout(this._activeToggleAxisJob);
+          this._activeToggleAxisJob = null;
+          if (axis._isBrushed || this._isZoomed) {
+            this._resetZoom();
+          }
+          return;
+        }
+        super._onAxisClicked(axis);
+      }
+
+      _onAxisContextMenu(orient) {
+        if (d3.event)
+          d3.event.preventDefault();
+        if (this._isZoomed) {
+          this._resetZoom();
+        } else {
+          super._onAxisContextMenu(orient);
+        }
+        this._debouncedHideInfo();
+      }
+
+      toggleOptions() {
+        this.showControl = !this.showControl;
+      }
+
+      _resetZoom(e) {
+        if (d3.event)
+          d3.event.preventDefault();
+        else if (e && e.preventDefault) {
+          e.preventDefault();
+        }
+        this.showControl = false;
+        this._isZoomed = false;
+        this._fixedValue = null;
+        this._focusedValue = null;
+        this._zoom.transition(300).call(this._zoomBehavior.transform, d3.zoomIdentity.scale(1));
+        this.axisX._isBrushed = false;
+        this.axisY._isBrushed = false;
+        this._graphs.forEach(g => {
+          if (g._isAttached && g.scaleX && g.scaleY) {
+            g.axisX._isBrushed = false;
+            g.axisY._isBrushed = false;
+            if (g.domainX && g.domainX.some(e => { return e === undefined || e === null; })) {
+              g.scaleX.domain(g.domainX);
+            }
+            if (g.domainY && g.domainY.some(e => { return e === undefined || e === null; })) {
+              g.scaleY.domain(g.domainY).nice();
+            }
+            g.axisX.transition().call(g.axisGeneratorX.scale(g.scaleX));
+            g.axisY.transition().call(g.axisGeneratorY.scale(g.scaleY));
+          }
+        })
+        if (!this.autoHideInfoDisabled) {
+          this._hideInfo();
+        }
+        this._redomain();
+      }
+
+      _openExportDialog() {
+        if (this._isFullscreen()) {
+          this.exitFullscreen();
+        }
+        if (!window._exportChartDialog) {
+          const DialogChartExport = customElements.get('dialog-chart-export');
+          window._exportChartDialog = new DialogChartExport(this);
+          document.body.appendChild(window._exportChartDialog);
+        } else {
+          window._exportChartDialog.setChartElement(this);
+        }
+        window._exportChartDialog.open();
+      }
+
+      // _refresh() {
+      //   this._buildLayout();
+      //   this._graphs.forEach( g => {
+      //     if (g && g._isAttached) {
+      //       g.clearValues(true);
+      //       g.requestValues(null, null, this.viewLength)
+      //         .then(function(data) {
+      //           for (var mount in data) {
+      //             if (mount === this.item.mount) {
+      //               this.insertValues(data[mount]);
+      //               break;
+      //             }
+      //           }
+      //         }.bind(g))
+      //         .catch(err => {
+      //           if (err) console.log(err);
+      //         });
+      //     }
+      //   })
+      //   this._isZoomed = false;
+      //   this._redomain();
+      // }
+    }
+    customElements.define(DeviceChart.is, DeviceChart);
+  </script>
+
+</dom-module>

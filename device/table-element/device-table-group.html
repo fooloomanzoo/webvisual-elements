@@ -1,0 +1,119 @@
+<link rel="import" href="../../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../../bower_components/iron-pages/iron-pages.html">
+<link rel="import" href="../../components/tab-element.html">
+<link rel="import" href="../../components/tabs-container.html">
+<link rel="import" href="device-table.html">
+
+<dom-module id="device-table-group">
+  <template strip-whitespace>
+    <style>
+      :host {
+        @apply --layout-vertical;
+        position: relative;
+        box-sizing: border-box;
+      }
+			#tabs {
+        width: 100%;
+        flex-shrink: 0;
+        background-color: rgba(0, 0, 0, 0.2);
+				--tab-overlay: {
+          background-color: rgba(0, 0, 0, 0.2);
+          color: currentColor;
+					border-bottom: 0.2em solid var(--secondary-color, var(--highlight-color, currentColor));
+					border-left: none;
+				}
+			}
+      .caption {
+        --caption-background: transparent;
+        --caption-color: currentColor;
+      }
+      #tables {
+        position: relative;
+        box-sizing: border-box;
+        flex: 1 0 0.0001px;
+      }
+      .tab {
+        font-size: 0.75em;
+        height: auto;
+        box-sizing: border-box;
+        border-radius: 0;
+        white-space: nowrap;
+      }
+      .hidden {
+        display: none;
+      }
+
+    </style>
+
+    <tabs-container id="tabs" selected="{{selectedMount}}" attr-for-selected="title">
+      <template is="dom-repeat" items="[[items]]">
+        <tab-element class="tab" title$="[[item.mount]]">
+          <device-caption class="caption"
+            title$="[[item.title]]"
+            keys="[[item.keys]]"></device-caption>
+        </tab-element>
+      </template>
+    </tabs-container>
+    <iron-pages id="tables" selected="{{selectedMount}}" attr-for-selected="title">
+      <template is="dom-repeat" items="[[items]]">
+        <device-table
+          title="[[item.mount]]"
+          item="[[item]]"
+          no-link="[[!opened]]"></device-table>
+      </template>
+    </iron-pages>
+
+  </template>
+
+  <script>
+    class DeviceTableGroup extends Polymer.Element {
+      static get is() {
+        return 'device-table-group'
+      }
+
+      static get properties() {
+        return {
+
+          opened: {
+            type: Boolean,
+            notify: true
+          },
+
+          items: {
+            type: Array,
+            notify: true
+          },
+
+          selectedItemMount: {
+            type: String,
+            notify: true
+          }
+        }
+      }
+
+      static get observers() {
+        return [
+          '_shouldHideTabs(items.length)',
+        ]
+      }
+
+      _shouldHideTabs(length) {
+        if (length < 2) {
+          this.$.tabs.classList.add('hidden');
+        } else {
+          this.$.tabs.classList.remove('hidden');
+        }
+        if (length === 1) {
+          this.set('selectedItemMount', this.items[0].mount)
+        }
+      }
+
+      reset() {
+        this.set('items', []);
+        this.set('selectedItemMount', '');
+      }
+    }
+    customElements.define(DeviceTableGroup.is, DeviceTableGroup);
+  </script>
+
+</dom-module>

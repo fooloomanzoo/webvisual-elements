@@ -1,0 +1,112 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../bower_components/iron-collapse/iron-collapse.html">
+<link rel="import" href="../../bower_components/paper-ripple/paper-ripple.html">
+<link rel="import" href="../shared-styles/button-style.html">
+<link rel="import" href="icon-set.html">
+
+<dom-module id="collapse-button">
+  <template strip-whitespace>
+    <style include="button-style">
+      :host {
+        display: block;
+      }
+      .content {
+        display: flex;
+        box-sizing: border-box;
+        @apply --collapse-content;
+      }
+      :host([horizontal]) .content {
+        flex-direction: row;
+      }
+      :host(:not([horizontal])) .content {
+        flex-direction: column;
+      }
+      :host([horizontal]) .button,
+      :host([horizontal]) ::slotted(*) {
+        height: 100%;
+      }
+      :host(:not([horizontal])) .button,
+      :host(:not([horizontal])) ::slotted(*) {
+        width: 100%;
+      }
+      ::slotted(*) {
+        box-sizing: border-box;
+        font-size: 0.8em;
+      }
+      [hidden] {
+        display: hidden !important;
+      }
+    </style>
+
+    <div class="button" on-click="toggle">
+      <paper-ripple id="ink" recenters></paper-ripple>
+      <iron-icon class="left" icon="[[icon]]" hidden$=[[!icon]]></iron-icon>
+      <span>[[title]]</span>
+      <iron-icon class="right" icon="[[_expandIcon]]"></iron-icon>
+    </div>
+
+    <iron-collapse opened$="[[opened]]">
+      <div class="content">
+        <slot></slot>
+      </div>
+    </iron-collapse>
+
+  </template>
+
+  <script>
+    class CollapseElement extends Polymer.Element {
+
+      static get is() {
+        return 'collapse-button';
+      }
+
+      static get properties() {
+        return {
+          opened: {
+            type: Boolean,
+            value: false,
+            notify: true,
+            reflectToAttribute: true
+          },
+
+          horizontal: {
+            type: Boolean,
+            value: false,
+            reflectToAttribute: true
+          },
+
+          title: {
+            type: String
+          },
+
+          icon: {
+            type: String
+          },
+
+          _expandIcon: {
+            type: String,
+            computed: '_computeExpandIcon(opened)'
+          }
+        }
+      }
+
+      _computeExpandIcon(opened) {
+        return opened ? 'expand-less' : 'expand-more'
+      }
+
+      open() {
+        this.opened = true;
+      }
+
+      close() {
+        this.opened = false;
+      }
+
+      toggle() {
+        this.opened = !this.opened;
+      }
+
+    }
+    customElements.define(CollapseElement.is, CollapseElement);
+  </script>
+</dom-module>

@@ -1,0 +1,172 @@
+<!--
+Modification from element in Polymer Shop Demo App
+-->
+
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../bower_components/iron-selector/iron-multi-selectable.html">
+
+<link rel="import" href="tabs-overlay.html">
+
+<dom-module id="tabs-container">
+  <template strip-whitespace>
+    <style>
+      :host {
+        @apply --layout;
+        @apply --layout-start-justified;
+        @apply --layout-center;
+        box-sizing: border-box;
+        position: relative;
+        white-space: nowrap;
+        overflow: hidden;
+        -webkit-overflow-scrolling: touch;
+        -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;
+      }
+      [hidden] {
+          display: none !important;
+      }
+      #container {
+        -webkit-overflow-scrolling: touch;
+        position: relative;
+        height: 100%;
+        display: flex;
+        flex-direction: row;
+        white-space: nowrap;
+        overflow: hidden;
+        pointer-events: all;
+        text-align: center;
+        -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;
+      }
+
+      #overlay {
+        @apply --tab-overlay;
+      }
+
+      :host([vertical]) {
+        @apply --layout-center-center;
+      }
+      :host([reverse]) #container {
+        flex-direction: row-reverse;
+      }
+      :host([vertical]) #container {
+        flex-direction: column;
+        width: 100%;
+      }
+      :host([reverse][vertical]) #container {
+        flex-direction: column-reverse;
+      }
+      :host([vertical]) ::slotted(*) {
+        width: 100%;
+      }
+      :host(:not([vertical])) ::slotted(*) {
+        height: 100%;
+      }
+
+    </style>
+
+    <nav id="container" on-track="_onScroll">
+      <tabs-overlay id="overlay"></tabs-overlay>
+      <slot></slot>
+    </nav>
+
+  </template>
+  <script>
+
+    class TabsContainer extends Polymer.mixinBehaviors(
+        [Polymer.IronMultiSelectableBehavior], Polymer.Element ) {
+
+      static get is() { return 'tabs-container'; }
+
+      static get properties() { return {
+         vertical: {
+           type: Boolean,
+           value: false,
+           reflectToAttribute: true
+         },
+
+         multi: {
+           type: Boolean,
+           value: false
+         }
+      }}
+
+      static get observers() { return [
+        '_onSelectedItemChanged(selectedItem)'
+      ]}
+
+      connectedCallback() {
+        super.connectedCallback();
+        this._addScrollListeners();
+      }
+
+      _addScrollListeners() {
+        this.$.container.addEventListener('scroll', e => this._onScroll(e), {passive: true});
+        this.$.container.addEventListener('wheel', e => this._onWheel(e), {passive: true});
+      }
+
+      _onSelectedItemChanged(selectedItem) {
+        // console.log('selectedItem', selectedItem);
+        if (!selectedItem) return;
+        if (!this.multi) {
+          this.$.overlay.target = selectedItem;
+        }
+        setTimeout(() => {
+          if (this.vertical) {
+            this.$.container.scrollTop = selectedItem.offsetTop - this.$.container.offsetTop - this.$.container.clientHeight / 2 + selectedItem.clientHeight / 2;
+          } else {
+            this.$.container.scrollLeft = selectedItem.offsetLeft - this.$.container.offsetLeft - this.$.container.clientWidth / 2 + selectedItem.clientWidth / 2;
+          }
+        }, 0);
+      }
+
+      _onWheel(e) {
+        if (!e) {
+          return;
+        }
+        let scrollChange, mult;
+
+        switch (e.deltaMode) {
+          case 0:
+            mult = 0.2;
+            break;
+          case 1:
+            mult = 20;
+            break;
+          case 2:
+            mult = this.$.container.offsetHeight;
+            break;
+          default:
+            mult = 1;
+        }
+
+        if (this.vertical) {
+          scrollChange = e.deltaY || 0;
+          this.$.container.scrollTop += scrollChange * mult;
+        } else {
+          scrollChange = e.deltaX || 0;
+          this.$.container.scrollLeft += scrollChange * mult;
+        }
+      }
+
+      _onScroll(e, detail) {
+        e.stopImmediatePropagation();
+        let scrollChange;
+        if (this.vertical) {
+          scrollChange = (detail && -detail.ddy) || 0;
+          this.$.container.scrollTop += scrollChange;
+        } else {
+          scrollChange = (detail && -detail.ddx) || 0;
+          this.$.container.scrollLeft += scrollChange;
+        }
+      }
+
+      reset() {
+        this.set('selectedItem', null);
+        this.set('selectedItems', []);
+        this.set('selectedValues', []);
+      }
+    }
+
+    customElements.define(TabsContainer.is, TabsContainer);
+
+  </script>
+</dom-module>

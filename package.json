@@ -1,0 +1,34 @@
+{
+  "name": "webvisual-elements",
+  "version": "1.0.0",
+  "description": "webcomponents for webvisual-server",
+  "main": "index.js",
+  "scripts": {
+    "postinstall": "cd test && bower update -f",
+    "test": "start https://127.0.0.1:3000 && node test/server.js"
+  },
+  "author": "fooloomanzoo",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fooloomanzoo/webvisual-elements.git"
+  },
+  "devDependencies": {
+    "body-parser": "*",
+    "connect-redis": "*",
+    "cookie-parser": "*",
+    "cookie-session": "*",
+    "express": "*",
+    "express-session": "*",
+    "merge-options": "*",
+    "merge-stream": "*",
+    "multer": "*",
+    "passport": "*",
+    "passport-local": "*",
+    "passport-socketio-redis": "*",
+    "serve-static": "*",
+    "socket.io": "*",
+    "spdy": "*",
+    "x-frame-options": "*"
+  }
+}

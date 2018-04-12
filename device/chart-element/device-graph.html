@@ -1,0 +1,750 @@
+<!-- Dependent to be content of device-chart -->
+<link rel="import" href="../../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="axes-mixin.html">
+<link rel="import" href="../../mixins/device-mixin.html">
+<link rel="import" href="../../mixins/color-mixin.html">
+
+<dom-module id="device-graph">
+  <template>
+    <style></style>
+  </template>
+  <script>
+    class DeviceGraph extends WebvisualMixins.AxesMixin(WebvisualMixins.ColorMixin(WebvisualMixins.DeviceMixin(Polymer.Element))) {
+
+      static get is() {
+        return 'device-graph';
+      }
+
+      static get properties() {
+        return {
+
+          hasLine: {
+            type: Boolean,
+            value: true
+          },
+
+          hasArea: {
+            type: Boolean,
+            value: false
+          },
+
+          interpolation: {
+            type: String,
+            value: 'curveLinear',
+            observer: '_interpolationChanged'
+          },
+
+          lineWidth: {
+            type: Number,
+            value: 1,
+            observer: '_lineWidthChanged'
+          },
+
+          dotRadius: {
+            type: Number,
+            value: 3.75
+          },
+
+          viewLength: {
+            type: Number,
+            value: 30000
+          },
+
+          storeInside: {
+            type: Boolean,
+            value: true,
+            readOnly: true
+          }
+
+        }
+      }
+
+      constructor() {
+        super();
+
+        this._isAttached = false;
+        this._chart = this._containerRoot;
+
+        this._areaGenerator = d3.area();
+        this._lineGenerator = d3.line();
+      }
+
+      static get observers() {
+        return [
+          '_itemChanged(item)',
+          '_thresholdChanged(item.threshold)'
+        ]
+      }
+
+      get _containerRoot() {
+        const root = Polymer.dom(this).getOwnerRoot();
+        if (!root)
+          return Polymer.dom(this).parentNode;
+        else if (root.host || root.nodeType === Node.DOCUMENT_FRAGMENT_NODE)
+          return root.host;
+        else
+          return;
+      }
+
+      connectedCallback() {
+        super.connectedCallback();
+        if (this.item) {
+          this.addNodes();
+        }
+      }
+
+      disconnectedCallback() {
+        this._isAttached = false;
+        this.removeNodes();
+        super.disconnectedCallback();
+      }
+
+      _domainXChanged(domainX) {
+        if (domainX === undefined || this.scaleX === undefined || domainX.some(e => { return e === undefined || e === null; })) return;
+        if (this._IS_LOG_SCALE(this.scalingX) && domainX[0] <= 0) {
+          super._domainXChanged( [ d3.min(this.values.filter(d => { return d.x > 0 }), d => { return d.x }), domainX[1] ] );
+        } else {
+          super._domainXChanged(domainX);
+        }
+      }
+
+      _domainYChanged(domainY) {
+        if (domainY === undefined || this.scaleY === undefined || domainY.some(e => { return e === undefined || e === null; })) return;
+        if (this._IS_LOG_SCALE(this.scalingY) && domainY[0] <= 0) {
+          super._domainYChanged( [ d3.min(this.values.filter(d => { return d.y > 0 }), d => { return d.y }), domainY[1] ] );
+        } else {
+          super._domainYChanged(domainY);
+        }
+      }
+
+      _scaleXChanged(scaleX) {
+        if (scaleX === undefined) {
+          return;
+        }
+        if (this._IS_LOG_SCALE(this.scalingX) && this.domainX[0] <= 0) {
+          this._domainXChanged( [ d3.min(this.values.filter(d => { return d.x > 0 }), d => { return d.x }), this.domainX[1] ] );
+        }
+        this._areaGenerator.x(d => {
+          return scaleX(d.x);
+        });
+        this._lineGenerator.x(d => {
+          return scaleX(d.x);
+        });
+        this._interpolationChanged(this.interpolation);
+        super._scaleXChanged(scaleX);
+      }
+
+      _scaleYChanged(scaleY) {
+        if (scaleY === undefined) {
+          return;
+        }
+        if (this._IS_LOG_SCALE(this.scalingY) ) {
+          if (this.domainY[0] <= 0) {
+            this._domainYChanged( [ d3.min(this.values.filter(d => { return d.y > 0 }), d => { return d.y }), this.domainY[1] ] );
+          }
+          this._areaGenerator
+            .y0(() => {
+              return this._chart._height;
+            })
+            .y1(d => {
+              return d.y > 0 ? scaleY(d.y) : this._chart._height;
+            });
+          this._lineGenerator
+            .y(d => {
+              return d.y > 0 ? scaleY(d.y) : this._chart._height;
+            });
+        } else {
+          this._areaGenerator
+            .y0(() => {
+              return scaleY(0);
+            })
+            .y1(d => {
+              return scaleY(d.y);
+            });
+          this._lineGenerator
+            .y(d => {
+              return scaleY(d.y);
+            });
+        }
+        super._scaleYChanged(scaleY);
+      }
+
+      _assignToChart() {
+        const containerRoot = this._containerRoot;
+        if (!containerRoot || containerRoot.nodeName !== 'DEVICE-CHART') {
+          console.warn('No parentElement (chart) for graph found. Registration of Graph Element failed', containerRoot);
+          return;
+        } else if (!containerRoot._isAttached) {
+          console.warn('Chart has not been attached yet for adding a graph. Registration of Graph Element failed');
+          return;
+        }
+        this._chart = containerRoot;
+        this._axisInsertionPoint = this._chart._axisInsertionPoint;
+        this._chart._addGraph(this);
+        return true;
+      }
+
+      addNodes() {
+        if (!this._assignToChart()) {
+          return;
+        }
+        if (this._isAttached) {
+          this.clearValues(true);
+        }
+        if (!this._chart.multiAxesX) {
+          this.set('domainX', this._chart.domainX);
+        }
+        if (!this._chart.multiAxesY) {
+          this.set('domainY', this._chart.domainY);
+        }
+        this.set('rangeX', this._chart.rangeX)
+        this.set('rangeY', this._chart.rangeY)
+
+        this._setColorProperties();
+        this._areaChanged();
+        this._lineChanged();
+
+        if (!this.axisX) {
+          this.axisX = this._computeAxisNode(this._axisInsertionPoint, this.axisOrientX, this.item.mount)
+            .attr('hidden', (this._chart.multiAxesX) ? null : true)
+        }
+        if (!this.axisY) {
+          this.axisY = this._computeAxisNode(this._axisInsertionPoint, this.axisOrientY, this.item.mount)
+            .attr('hidden', (this._chart.multiAxesY) ? null : true)
+            .classed('vertical', true)
+        }
+        if (this.scaleX) {
+          this.axisGeneratorX = this._computeAxisGenerator(this.axisOrientX, this.scaleX, this.scalingX, this.scaleBaseX);
+        }
+        if (this.scaleY) {
+          this.axisGeneratorY = this._computeAxisGenerator(this.axisOrientY, this.scaleY, this.scalingY, this.scaleBaseY);
+        }
+        this._isAttached = true;
+      }
+
+      removeNodes() {
+        // console.log('removeNodes', this.item.mount);
+        let node;
+        if (this.axisX) {
+          node = this.axisX.node();
+          if (node && node.parentElement)
+            node.parentElement.removeChild(node);
+        }
+        if (this.axisY) {
+          node = this.axisY.node();
+          if (node && node.parentElement)
+            node.parentElement.removeChild(node);
+        }
+        if (this._area && this._area.node) {
+          node = this._area.node();
+          if (node && node.parentElement)
+            node.parentElement.removeChild(node);
+          this._area = null;
+        }
+        if (this._line && this._line.node) {
+          node = this._line.node();
+          if (node && node.parentElement)
+            node.parentElement.removeChild(node);
+          this._line = null;
+        }
+        this._thresholdChanged();
+        this._chart._removeGraph(this);
+      }
+
+      _areaChanged() {
+        if (!(this._chart && this._chart._area)) return;
+
+        if (!(this._area && this._area.node)) { // add fill area
+          this._area = this._chart._area.append('svg:path');
+          this._area.append('svg:title').text(this.item.mount);
+        }
+        // update fill area node properties
+        this._area
+          .attr('mount', this.item.mount)
+          .attr('class', 'area')
+          .attr('stroke-width', 0)
+          .attr('fill', this.item.theshold !== undefined ? ('url(#boundery-line-' + this.item.mount + ')') : this.item.color || '#FFF');
+
+        if (this._areaGenerator)
+          this._area.attr('d', this._areaGenerator(this.values || []));
+      }
+
+      _lineChanged() {
+        if (!(this._chart && this._chart._line)) return;
+
+        if (!(this._line && this._line.node)) { // add line node
+          this._line = this._chart._line.append('svg:path');
+          this._line.append('svg:title').text(this.item.mount);
+        }
+        // update line node properties
+        this._line
+          .attr('mount', this.item.mount)
+          .attr('class', 'line')
+          .attr('fill', 'none')
+          .attr('stroke', this.item.theshold !== undefined ? ('url(#boundery-line-' + this.item.mount + ')') : this.item.color || '#000')
+          .attr('stroke-width', this.lineWidth);
+
+        if (this._lineGenerator)
+          this._line.attr('d', this._lineGenerator(this.values || []));
+      }
+
+      _thresholdChanged(threshold) {
+        if (!(this._chart && this._chart._defs)) return;
+
+        if (threshold) {
+          if (!this.boundery) { // add threshold node
+            this.boundery = this._chart._defs.append('linearGradient');
+          }
+          // update threshold node properties
+          this.boundery
+            .attr('id', 'boundery-line-' + this.item.mount)
+            .attr('gradientUnits', 'userSpaceOnUse')
+            .attr('x1', 0).attr('y1', this._chart._height)
+            .attr('x2', 0).attr('y2', 0);
+          if (this._area && this._area.attr) this._area.attr('fill', 'url(#boundery-line-' + this.item.mount + ')');
+          if (this._line && this._line.attr) this._line.attr('stroke', 'url(#boundery-line-' + this.item.mount +')');
+        } else {
+          // remove threshold colors
+          if (this.boundery && this.boundery.node) {
+            let node = this.boundery.node();
+            if (node && node.parentElement)
+              node.parentElement.removeChild(node);
+            this.boundery = null;
+          }
+          if (this._area && this._area.attr) this._area.attr('fill', this.item.color || '#FFF');
+          if (this._line && this._line.attr) this._line.attr('stroke', this.item.color || '#000');
+        }
+      }
+
+      _setColorProperties() {
+        if (!this._chart) return;
+        if (this.item && this.item.color) {
+          this.axisColor = this.item.color;
+          if (this._area && this._area.attr) this._area.attr('fill', this.item.theshold !== undefined ? ('url(#boundery-line-' + this.item.mount + ')') : this.item.color || '#FFF');
+          if (this._line && this._line.attr) this._line.attr('stroke', this.item.theshold !== undefined ? ('url(#boundery-line-' + this.item.mount + ')') : this.item.color || '#000');
+        }
+      }
+
+      _itemChanged(item) {
+        if (!this._isAttached) {
+          return;
+        }
+        if (!(item && item.mount)) {
+          this.removeNodes();
+          return;
+        }
+        this.addNodes();
+      }
+
+      insertValues(values, len) {
+        if (values === undefined) {
+          return;
+        }
+        len = len || (this.viewLength > 0 ? this.viewLength : values.length);
+        if (len) {
+          values = values.slice(values.length - len, values.length);
+        }
+
+        if (this.storeInside) {
+          this.values = this.values.concat(values);
+          let min = this.min(this.values, 'x');
+          let max = this.max(this.values, 'x');
+          if (min !== undefined && max !== undefined) {
+            if (this.axisX && !this.axisX._isBrushed && !this._chart.axisX._isBrushed && !(this._chart._isZoomed && !this._chart.multiAxesX)) {
+              this.set('domainX', [ min, max ] );
+            }
+            else if (!this._chart.multiAxesX) {
+              if (min < this._chart.domainX[0]) {
+                this._chart.set('domainX', [ min, this._chart.domainX[1] ] );
+              }
+              if (max > this._chart.domainX[1]) {
+                this._chart.set('domainX', [ this._chart.domainX[0], max ] );
+              }
+            }
+          }
+          min = this.min(this.values, 'y');
+          max = this.max(this.values, 'y');
+          if (min !== undefined && max !== undefined) {
+            if (min === max) {
+              min--;
+              max++;
+            }
+            if (this.axisY && !this.axisY._isBrushed && !this._chart.axisY._isBrushed && !(this._chart._isZoomed && !this._chart.multiAxesY)) {
+              this.set('domainY', [ min, max ] );
+            } else if (!this._chart.multiAxesY) {
+              if (min < this._chart.domainY[0]) {
+                this._chart.set('domainY', [ min, this._chart.domainY[1] ] );
+              }
+              if (max > this._chart.domainY[1]) {
+                this._chart.set('domainY', [ this._chart.domainY[0], max ] );
+              }
+            }
+          }
+        }
+        this.renderInsertedValues(values);
+      }
+
+      renderClearing() {
+        this._area.attr('d', this._areaGenerator([]));
+        this._line.attr('d', this._lineGenerator([]));
+      }
+
+      spliceValues(splices) {
+        // requestAnimationFrame( () => {
+        // var changeRecord = [];
+
+        for (let i = 0; i < splices.length; i++) {
+          let j;
+          for (j = 0; j < this.values.length; j++) {
+            if (this.values[j].x === splices[i].x)
+              break;
+          }
+          if (j !== this.values.length) {
+            this.values.splice(j, 1);
+            // changeRecord.push( { index: j, removed: [this.values[j]], addedCount: 0, object: this.values, type: 'splice'} );
+          }
+        }
+
+        // })
+        // this.notifySplices('values', changeRecord);
+        this.redraw();
+      }
+
+      renderInsertedValues(values) {
+        if (!this._isAttached && this.item) {
+          this.addNodes();
+        }
+        if (this._chart) {
+          let redomain_and_draw;
+          if (this._chart.domainX && this._chart.domainX.some(e => { return e === undefined || e === null; })) {
+            this._chart.set('domainX', this.domainX );
+            redomain_and_draw = true;
+          }
+          if (this._chart.domainY && this._chart.domainY.some(e => { return e === undefined || e === null; })) {
+            this._chart.set('domainY', this.domainY );
+            redomain_and_draw = true;
+          }
+          if (!(this._chart.multiAxesY && this._chart.multiAxesX) && !this._chart._isZoomed)  {
+            redomain_and_draw = true;
+          }
+          this.redraw(redomain_and_draw, values);
+        }
+      }
+
+      sizeChanged() {
+        if (!this._isAttached) return;
+        this._chart.sizeChanged();
+      }
+
+      redraw(force, values) {
+        if (!(this._isAttached && this.scaleX && this.scaleY)) return;
+
+        if (force) {
+          this._chart.redraw(true);
+          return;
+        }
+
+        const data = this.values || values || [];
+
+        // fill area
+        this._area.attr('d', this._areaGenerator(this.hasArea ? data : []));
+
+        // line
+        this._line.attr('d', this._lineGenerator(this.hasLine ? data : []));
+
+        // threshold gradients
+        if (this.item && this.item.threshold) {
+          if (!(this.boundery && this.boundery.node)) {
+            this._thresholdChanged(this.item.threshold);
+          }
+          const b_line = [],
+            u_color = this.getComputedStyleValue('--device-state-exceeds-color') || '#F20C0C',
+            l_color = this.getComputedStyleValue('--device-state-deceeds-color') || '#F20C0C',
+            i_color = this.item.color || '#000';
+          let y;
+
+          if (this.item.threshold.from !== undefined) {
+            y = ((1 - Math.ceil(this.scaleY(this.item.threshold.from) + this.lineWidth * 1.25) / this._chart._height) * 100);
+            if (Number.isFinite(y)) {
+              b_line.push({
+                o: y + '%',
+                c: l_color
+              });
+              b_line.push({
+                o: y + '%',
+                c: i_color
+              });
+            }
+          }
+          if (this.item.threshold.to !== undefined) {
+            y = ((1 - Math.floor(this.scaleY(this.item.threshold.to) - this.lineWidth * 1.25) / this._chart._height) * 100);
+            if (Number.isFinite(y)) {
+              b_line.push({
+                o: y + '%',
+                c: i_color
+              });
+              b_line.push({
+                o: y + '%',
+                c: u_color
+              });
+            }
+          }
+          const gradients = this.boundery
+            .attr('x1', 0).attr('y1', this._chart._height)
+            .attr('x2', 0).attr('y2', 0)
+            .selectAll('stop')
+            .data(b_line);
+
+          gradients.attr('offset', function(d) {
+              return d.o;
+            })
+            .attr('stop-color', function(d) {
+              return d.c;
+            });
+
+          gradients.enter()
+            .append('stop')
+            .attr('offset', function(d) {
+              return d.o;
+            })
+            .attr('stop-color', function(d) {
+              return d.c;
+            });
+
+          gradients.exit()
+            .remove();
+        }
+        // TODO(?): update line, animated http://bl.ocks.org/benjchristensen/1148374
+      }
+
+      _getDomain(key, save) {
+        return new Promise((resolve, reject) => {
+          const vertical = (key === 'y'),
+            scale = vertical ? this.scalingY : this.scalingX;
+          this.requestRange(key)
+            .then(domain => {
+              if (domain[0] !== undefined && domain[1] !== undefined) {
+                if (vertical && domain[0] === domain[1]) {
+                  domain[0] --;
+                  domain[1]++;
+                }
+                // logarithmic scales need scales of same prefix
+                let is_log = this._IS_LOG_SCALE(scale);
+                if (is_log) {
+                  let sign = (domain[0]*domain[1] > 0);
+                  if (sign && domain[0] <= 0) {
+                    domain[0] = Math.sign(domain[1])*Number.EPSILON;
+                  }
+                  if (sign && domain[1] <= 0) {
+                    domain[1] = Math.sign(domain[0])*Number.EPSILON;
+                  }
+                }
+                if (save) {
+                  if (key === 'x') {
+                    this.set('domainX', domain);
+                  }
+                  else if (key === 'y') {
+                    this.set('domainY', domain);
+                  }
+                }
+              }
+              resolve({domain: domain, key: key});
+            })
+            .catch(error => {
+              reject(error);
+            });
+        });
+      }
+
+      // _defined(d) {
+      //   if (!Number.isFinite(d.y))
+      //     return null;
+      //   else if (d.y <= 0 && this._IS_LOG_SCALE(this.scalingY))
+      //     return null; // log- and sqrt-scale require larger than 0-Values
+      //   // else if ((d.x >= domainX[0] && d.x <= domainX[1]) ||
+      //   //   (data[i + 1] && data[i + 1].x >= domainX[0] && data[i + 1].x <= domainX[1]) ||
+      //   //   (data[i - 1] && data[i - 1].x >= domainX[0] && data[i - 1].x <= domainX[1]))
+      //   //   return true; // only numbers in x-Domain are shown (and their successor and predecessor) (graph is a function by definition, so y-Domain is not relevant)
+      //   // else
+      //   //   return false;
+      //   return true;
+      // }
+
+      // finding the closest Point relativly to a mouse-Coordinate m (stabil)
+      // if looking just at to path (instabil): https://bl.ocks.org/mbostock/8027637 https://pomax.github.io/bezierinfo/#projections
+      _closestPoint(m) {
+        // find good prediction
+        const valuesLength = this.values.length,
+          x_0 = +this.scaleX.invert(m[0]),
+          precision = Math.ceil(this._chart._width / valuesLength),
+          variance = Math.pow(Math.ceil(valuesLength / this._chart._width), 2),
+          bisectLeft = this._bisectDate.left;
+
+        let mid = bisectLeft(this.values, x_0, 0, valuesLength - 1);
+
+        let minDist = this._pixdistance2(this.values[mid], m);
+        const searchRadius = Math.sqrt(minDist) / variance,
+          x_lo = +this.scaleX.invert(m[0] - searchRadius);
+
+        let lo = bisectLeft(this.values, x_lo, 0, mid);
+        if (lo < 0 || lo >= valuesLength - 1) lo = 0;
+
+        if (mid === lo) mid++;
+
+        let hi = 2 * mid - lo;
+        if (hi > valuesLength || hi <= 0) hi = valuesLength;
+
+        let currentDist,
+          pos = mid;
+        // linear scan for coarse approximation
+        for (let i = lo; i < hi; i += precision) {
+          if ((currentDist = this._pixdistance2(this.values[i], m)) <= minDist) {
+            mid = i, minDist = currentDist;
+          }
+        }
+        pos = mid;
+
+        // linear search in positive prediction radius
+        for (let i = mid + 1; i < hi && i < mid + precision - 1; i++) {
+          if ((currentDist = this._pixdistance2(this.values[i], m)) <= minDist) {
+            minDist = currentDist;
+            pos = i;
+          }
+        }
+
+        // linear search in negative prediction radius
+        for (let i = mid - 1; i > lo && i > mid - precision + 1; i--) {
+          if ((currentDist = this._pixdistance2(this.values[i], m)) <= minDist) {
+            minDist = currentDist;
+            pos = i;
+          }
+        }
+
+        // console.log(pos);
+
+        return {
+          x: this.values[pos].x,
+          y: this.values[pos].y
+        };
+      }
+
+      _pixdistance2(p, m) {
+        const dx = this.scaleX(p.x) - m[0],
+          dy = this.scaleY(p.y) - m[1];
+        return dx*dx + dy*dy;
+      }
+
+      // finding the closest interpolated Point relativly to a mouse-Coordinate m
+      // https://bl.ocks.org/mbostock/8027637
+      // https://pomax.github.io/bezierinfo/#projections
+      _closestInterpolatedPoint(point, pathNode) {
+        pathNode = pathNode || this._area.node() || this._line.node();
+        const pathLength = pathNode.getTotalLength();
+        let precision = Math.ceil(pathLength / this._chart._width / 2.0) * 2,
+          best,
+          bestLength,
+          bestDistance = Infinity;
+
+        // linear scan for coarse approximation
+        for (let scan, scanLength = 0, scanDistance; scanLength <= pathLength; scanLength += precision) {
+          if ((scanDistance = distance2(scan = pathNode.getPointAtLength(scanLength))) < bestDistance) {
+            best = scan, bestLength = scanLength, bestDistance = scanDistance;
+          }
+        }
+
+        // binary search for precise estimate
+        precision /= 2;
+        while (precision > 0.5) {
+          let before,
+            after,
+            beforeLength,
+            afterLength,
+            beforeDistance,
+            afterDistance;
+          if ((beforeLength = bestLength - precision) >= 0 && (beforeDistance = distance2(before = pathNode.getPointAtLength(beforeLength))) < bestDistance) {
+            best = before, bestLength = beforeLength, bestDistance = beforeDistance;
+          } else if ((afterLength = bestLength + precision) <= pathLength && (afterDistance = distance2(after = pathNode.getPointAtLength(afterLength))) < bestDistance) {
+            best = after, bestLength = afterLength, bestDistance = afterDistance;
+          } else {
+            precision /= 2;
+          }
+        }
+
+        best = {
+          x: this.scaleX(best.x),
+          y: this.scaleY(best.y)
+        };
+        best.distance = Math.sqrt(bestDistance);
+        return best;
+
+        function distance2(p) {
+          const dx = p.x - point[0],
+            dy = p.y - point[1];
+          return dx * dx + dy * dy;
+        }
+      }
+
+      setColor(color) {
+        // random color if color is not set
+        super.setColor.call(this, color);
+        this._setColorProperties();
+      }
+
+      clearValues(force) {
+        super.clearValues.call(this, force);
+      }
+
+      _lineWidthChanged(lineWidth) {
+        if (this._line && this._line.attr) {
+          this._line.attr('stroke-width', lineWidth);
+        }
+      }
+
+      _interpolationChanged(interpolation) {
+        if (!(interpolation && interpolation.match(/curve.*/) && interpolation in d3)) {
+          return;
+        }
+        const curve = d3[interpolation];
+        this._areaGenerator.curve(curve);
+        this._lineGenerator.curve(curve);
+      }
+
+      _onAxisClicked(axis) {
+        if (this._activeToggleAxisJob) {
+          clearTimeout(this._activeToggleAxisJob);
+          this._activeToggleAxisJob = null;
+          if (axis._isBrushed || this._isZoomed) {
+            this._chart._resetZoom();
+          }
+          return;
+        }
+        super._onAxisClicked(axis);
+      }
+
+      _onAxisMouseover() {
+        super._onAxisMouseover();
+        if (this._area) {
+          this._area.raise();
+          // fill area
+          if (this.hasArea === false) {
+            this._area.transition().attr('d', this._areaGenerator(this.values || []));
+          }
+        }
+        if (this._line) {
+          this._line.raise();
+        }
+      }
+
+      _onAxisMouseleave() {
+        super._onAxisMouseleave();
+        if (this._area) {
+          if (this.hasArea === false) {
+            this._area.attr('d', this._areaGenerator([]));
+          }
+        }
+      }
+    }
+    customElements.define(DeviceGraph.is, DeviceGraph);
+  </script>
+
+</dom-module>

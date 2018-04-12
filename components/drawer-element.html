@@ -1,0 +1,698 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<dom-module id="drawer-element">
+
+  <template strip-whitespace>
+    <style>
+      :host {
+        position: fixed;
+        left: 0; top: 0; right: 0; bottom: 0;
+        z-index: 2;
+        visibility: hidden;
+        pointer-events: none;
+        overflow: hidden;
+        transition-property: visibility;
+        --drawer-shadow: {
+          box-shadow: 0 6px 10px 0 rgba(0, 0, 0, 0.14),
+                      0 1px 18px 0 rgba(0, 0, 0, 0.12),
+                      0 3px 5px -1px rgba(0, 0, 0, 0.4);
+        };
+      }
+      :host([persistent]),
+      :host([opened]) {
+        visibility: visible;
+      }
+      #contentContainer {
+        position: absolute;
+        box-sizing: border-box;
+        font-size: 1em;
+        text-align: center;
+        will-change: transform;
+        transition-property: -webkit-transform;
+        transition-property: transform;
+        pointer-events: auto;
+        background-color: var(--drawer-background, --primary-background);
+        color: var(--drawer-color, currentColor);
+        @apply --layout-vertical;
+        @apply --drawer-content;
+      }
+      :host([horizontal]) > #contentContainer {
+        @apply --layout-horizontal;
+        @apply --layout-center-center;
+      }
+      :host([shadow]) > #contentContainer::before {
+        position: absolute;
+        bottom: 0; left: 0; top: 0; right: 0;
+        content: "";
+        transition: opacity 0.4s;
+        pointer-events: none;
+        opacity: 0;
+        will-change: opacity;
+        @apply --drawer-shadow;
+      }
+      :host([shadow][opened]) > #contentContainer::before {
+        opacity: 1;
+      }
+      :host([align=bottom]) > #contentContainer {
+        bottom: 0; left: 50%; top: auto; right: auto;
+        -webkit-transform: translate3d(-50%, 100%, 0);
+        transform: translate3d(-50%, 100%, 0);
+        width: auto;
+        height: var(--drawer-height, 2.75em);
+        border-radius: 4px 4px 0 0;
+      }
+      :host([align=top]) > #contentContainer {
+        bottom: auto; top: 0; left: 50%; right: auto;
+        -webkit-transform: translate3d(-50%, -100%, 0);
+        transform: translate3d(-50%, -100%, 0);
+        width: auto;
+        height: var(--drawer-height, 2.75em);
+        border-radius: 0 0 4px 4px;
+      }
+      :host([align=left]) > #contentContainer {
+        bottom: auto; top: 50%; left: 0; right: auto;
+        -webkit-transform: translate3d(-100%, -50%, 0);
+        transform: translate3d(-100%, -50%, 0);
+        width: var(--drawer-width, 20em);
+        height: auto;
+        border-radius: 0 4px 4px 0;
+      }
+      :host([align=right]) > #contentContainer {
+        bottom: auto; top: 50%; left: auto; right: 0;
+        -webkit-transform: translate3d(100%, -50%, 0);
+        transform: translate3d(100%, -50%, 0);
+        width: var(--drawer-width, 20em);
+        height: auto;
+        border-radius: 4px 0 0 4px;
+      }
+      :host([stretch]) > #contentContainer {
+        border-radius: 0 0 0 0;
+      }
+      :host([stretch][align=bottom]) > #contentContainer {
+        width: 100%;
+      }
+      :host([stretch][align=top]) > #contentContainer {
+        width: 100%;
+      }
+      :host([stretch][align=left]) > #contentContainer {
+        height: 100%;
+      }
+      :host([stretch][align=right]) > #contentContainer {
+        height: 100%;
+      }
+      :host([persistent]) > #contentContainer,
+      :host([opened]) > #contentContainer {
+        visibility: visible;
+      }
+      :host([persistent][align=bottom]) > #contentContainer,
+      :host([persistent][align=top]) > #contentContainer,
+      :host([opened][align=bottom]) > #contentContainer,
+      :host([opened][align=top]) > #contentContainer {
+        -webkit-transform: translate3d(-50%, 0, 0);
+        transform: translate3d(-50%, 0, 0);
+      }
+      :host([persistent][align=left]) > #contentContainer,
+      :host([persistent][align=right]) > #contentContainer,
+      :host([opened][align=left]) > #contentContainer,
+      :host([opened][align=right]) > #contentContainer {
+        -webkit-transform: translate3d(0, -50%, 0);
+        transform: translate3d(0, -50%, 0);
+      }
+      :host([swipe-open]:not([opened])) > #contentContainer::after {
+        position: absolute;
+        visibility: visible;
+        content: '';
+        pointer-events: auto;
+      }
+      :host([swipe-open][align=bottom]) > #contentContainer::after {
+        top: auto; bottom: 100%; left: 0; right: 0;
+        height: 20px;
+      }
+      :host([swipe-open][align=top]) > #contentContainer::after {
+        top: 100%; bottom: auto; left: 0; right: 0;
+        height: 20px;
+      }
+      :host([swipe-open][align=left]) > #contentContainer::after {
+        top: 0; bottom: 0; left: 100%; right: auto;
+        width: 20px;
+      }
+      :host([swipe-open][align=right]) > #contentContainer::after {
+        top: 0; bottom: 0; left: auto; right: 100%;
+        width: 20px;
+      }
+      :host([opened]) > #contentContainer::after {
+        pointer-events: none !important;
+      }
+      #scrim {
+        position: absolute;
+        top: 0; right: 0; bottom: 0; left: 0;
+        transition-property: opacity;
+        -webkit-transform: translateZ(0);
+        transform:  translateZ(0);
+        opacity: 0;
+        background: var(--drawer-scrim-background, rgba(0, 0, 0, 0.4));
+      }
+      :host([opened]) > #scrim {
+        opacity: 1;
+        pointer-events: all;
+      }
+      :host(:not([scrim])) > #scrim,
+      :host([persistent]) > #scrim {
+        visibility: hidden;
+        opacity: 0;
+        pointer-events: none !important;
+      }
+      @media (max-width: 767px) {
+        :host([align]) #contentContainer {
+          border-radius: 0 0 0 0;
+        }
+        :host([align=bottom]) #contentContainer,
+        :host([align=top]) #contentContainer {
+          width: 100%;
+        }
+        :host([align=left]) #contentContainer,
+        :host([align=right]) #contentContainer {
+          height: 100%;
+        }
+      }
+      :slotted(*) {
+        position: relative;
+      }
+      ::slotted(.prop) {
+        position: absolute;
+        color: currentColor;
+        height: var(--icon-size, 1.5em);
+        width: var(--icon-size, 1.5em);
+        padding: var(--icon-padding, 0.5em);
+        left: 0.25em;
+        bottom: 0;
+      }
+      ::slotted(.message) {
+        margin-left: calc(2*var(--icon-padding, 0.5em) + var(--icon-size, 1.5em) - 0.5em);
+      }
+    </style>
+
+    <div id="scrim" on-click="close"></div>
+
+    <div id="contentContainer">
+      <slot name="icon"></slot>
+      <slot></slot>
+    </div>
+
+  </template>
+
+  <script>
+    class DrawerElement extends Polymer.Element {
+
+      static get is() {
+        return 'drawer-element';
+      }
+
+      static get properties() {
+        return {
+          autoClose: {
+            type: Boolean,
+            value: false,
+            observer: '_autoCloseChanged'
+          },
+
+          autoClosePeriod: {
+            type: Number,
+            value: 8000,
+            observer: 'close'
+          },
+
+          opened: {
+            type: Boolean,
+            reflectToAttribute: true,
+            notify: true,
+            observer: '_openedChanged'
+          },
+
+          /**
+           * The drawer does not have a scrim and cannot be swiped close.
+           */
+          persistent: {
+            type: Boolean,
+            value: false,
+            reflectToAttribute: true
+          },
+
+          /**
+           * The transition duration of the drawer in milliseconds.
+           */
+          transitionDuration: {
+            type: Number,
+            value: 200
+          },
+
+          /**
+           * align of the drawer on the screen ('top', 'bottom', 'left', 'right').
+           */
+          align: {
+            type: String,
+            value: 'bottom',
+            reflectToAttribute: true
+          },
+
+          /**
+           * Create an area at the edge of the screen to swipe open the drawer.
+           */
+          swipeOpen: {
+            type: Boolean,
+            value: false,
+            reflectToAttribute: true
+          },
+
+          scrim: {
+            type: Boolean,
+            value: false,
+            reflectToAttribute: true
+          },
+
+          stretch: {
+            type: Boolean,
+            value: false,
+            reflectToAttribute: true
+          },
+
+          shadow: {
+            type: Boolean,
+            value: false,
+            reflectToAttribute: true
+          },
+
+          horizontal: {
+            type: Boolean,
+            computed: '_computeHorizontal(align)',
+            reflectToAttribute: true
+          },
+
+          endPositioned: {
+            type: Boolean,
+            computed: '_computePositioning(align)'
+          }
+
+        }
+      }
+
+      static get observers() {
+        return [
+          '_styleTransitionDuration(transitionDuration)',
+          '_addTrackListeners(horizontal)'
+        ]
+      }
+
+      constructor() {
+        super();
+        this._translateOffset = 0;
+        this._trackDetails = null;
+        this._drawerState = 0;
+        this._boundEscKeydownHandler = null;
+        this._firstTabStop = null;
+        this._lastTabStop = null;
+        this._MIN_FLING_THRESHOLD = 0.2;
+        this._MIN_TRANSITION_VELOCITY = 1.2;
+        this._FLING_TIMING_FUNCTION = 'cubic-bezier(0.667, 1, 0.667, 1)';
+        this._FLING_INITIAL_SLOPE = 1.5;
+        this._CONDITION_PARTS = 0.5;
+        this._DRAWER_STATE = {
+          INIT: 0,
+          OPENED: 1,
+          OPENED_PERSISTENT: 2,
+          CLOSED: 3,
+          TRACKING: 4,
+          FLINGING: 5
+        }
+      }
+
+
+      connectedCallback() {
+        super.connectedCallback();
+        // Only transition the drawer after its first render (e.g. app-drawer-layout
+        // max need to set the initial opened state which should not be transitioned).
+        this._styleTransitionDuration(0);
+        Polymer.RenderStatus.afterNextRender(this, function() {
+          this._styleTransitionDuration(this.transitionDuration);
+          this._boundEscKeydownHandler = this._escKeydownHandler.bind(this);
+        });
+      }
+
+      disconnectedCallback() {
+        super.disconnectedCallback();
+        document.removeEventListener('keydown', this._boundEscKeydownHandler);
+      }
+
+      /**
+       * Opens the drawer.
+       */
+      open() {
+        this.opened = true;
+      }
+
+      /**
+       * Closes the drawer.
+       */
+      close() {
+        this.opened = false;
+      }
+
+      /**
+       * Toggles the drawer open and close.
+       */
+      toggle() {
+        if (this.opened) {
+          this.close();
+        } else {
+          this.open();
+        }
+      }
+
+      _openedChanged(opened) {
+        if (opened) {
+          if (this.autoClose) {
+            this._autoCloseChanged(this.autoClosePeriod);
+          }
+        } else {
+          this._autoCloseChanged(false);
+        }
+      }
+
+      _autoCloseChanged(autoClose) {
+        if (this._autoCloseJob) {
+          clearTimeout(this._autoCloseJob);
+        }
+        if (autoClose) {
+          this._autoCloseJob = setTimeout(() => {
+            this.close();
+            this._autoCloseJob = null;
+          }, this.autoClosePeriod);
+        }
+      }
+
+      _computeHorizontal(align) {
+        return align === 'bottom' || align === 'top';
+      }
+
+      _computePositioning(align) {
+        return align === 'bottom' || align === 'right';
+      }
+
+      _getExpandedLength() {
+        return this.horizontal ? this.$.contentContainer.offsetHeight : this.$.contentContainer.offsetWidth;
+      }
+
+      _addTrackListeners(horizontal) {
+        Polymer.RenderStatus.afterNextRender(this, function() {
+          Polymer.Gestures.removeListener( this.$.contentContainer, 'track', e => this._track(e) );
+          Polymer.Gestures.addListener( this.$.contentContainer, 'track', e => this._track(e) );
+          Polymer.Gestures.setTouchAction( this.$.contentContainer, horizontal ? 'pan-x' : 'pan-y' );
+
+          Polymer.Gestures.removeListener( this.$.scrim, 'track', e => this._track(e) );
+          Polymer.Gestures.addListener( this.$.scrim, 'track', e => this._track(e) );
+          Polymer.Gestures.setTouchAction( this.$.scrim, horizontal ? 'pan-x' : 'pan-y' );
+
+          Polymer.Gestures.removeListener( this.$.scrim, 'tap', () => this.close() );
+          Polymer.Gestures.addListener( this.$.scrim, 'tap', () => this.close() );
+        });
+      }
+
+      _escKeydownHandler(event) {
+        if (event.keyCode === 27) {
+          // Prevent any side effects if app-drawer closes.
+          event.preventDefault();
+          this.close();
+        }
+      }
+
+      _track(event) {
+        if (this.persistent || !this.swipeOpen) {
+          return;
+        }
+
+        // Disable user selection on desktop.
+        event.preventDefault();
+
+        switch (event.detail.state) {
+          case 'start':
+            this._trackStart(event);
+            break;
+          case 'track':
+            this._trackMove(event);
+            break;
+          case 'end':
+            this._trackEnd(event);
+            break;
+        }
+      }
+
+      _trackStart() {
+        this._drawerState = this._DRAWER_STATE.TRACKING;
+
+        // Disable transitions since style attributes will reflect user track events.
+        this._styleTransitionDuration(0);
+        this.style.visibility = 'visible';
+
+        const rect = this.$.contentContainer.getBoundingClientRect();
+        switch (this.align) {
+          case 'left':
+            this._translateOffset = rect.left;
+            break;
+          case 'right':
+            this._translateOffset = rect.right - window.innerWidth;
+            break;
+          case 'top':
+            this._translateOffset = rect.top;
+            break;
+          case 'bottom':
+            this._translateOffset = rect.bottom - window.innerHeight;
+            break;
+        }
+        this._trackDetails = [];
+      }
+
+      _trackMove(event) {
+        const d = this.horizontal ? event.detail.dy : event.detail.dx;
+        this._translateDrawer(d + this._translateOffset);
+        this._trackDetails.push({
+          d: d,
+          timeStamp: Date.now()
+        });
+      }
+
+      _trackEnd(event) {
+        const d = this.horizontal ? event.detail.dy : event.detail.dx;
+        const dd = d + this._translateOffset;
+        const drawerExpandedSide = this._getExpandedLength();
+
+        const isInEndState = !this.endPositioned ? (dd >= 0 || dd <= -drawerExpandedSide) :
+          (dd <= 0 || dd >= drawerExpandedSide);
+
+        if (!isInEndState) {
+          // No longer need the track events after this method returns - allow them to be GC'd.
+          const trackDetails = this._trackDetails;
+          this._trackDetails = null;
+
+          this._flyingDrawer(event, trackDetails);
+          if (this._drawerState === this._DRAWER_STATE.FLINGING) {
+            return;
+          }
+        }
+
+        // If the drawer is not flying, toggle the opened state based on the align of
+        // the drawer.
+        const conditionalDragLength = drawerExpandedSide * this._CONDITION_PARTS;
+
+        if (d < -conditionalDragLength) {
+          this.opened = this.endPositioned;
+        } else if (d > conditionalDragLength) {
+          this.opened = !this.endPositioned;
+        }
+
+        if (isInEndState) {
+          this._debouncedResetDrawerState(0);
+        } else {
+          this._debouncedResetDrawerState(this.transitionDuration);
+        }
+
+        this._styleTransitionDuration(this.transitionDuration);
+        this._resetDrawerTranslate();
+        this.style.visibility = '';
+      }
+
+      _calculateVelocity(event, trackDetails) {
+        if (!(trackDetails && trackDetails.length)) {
+          return 0;
+        }
+        // Find the oldest track event that is within 100ms using binary search.
+        const now = Date.now();
+        const timeLowerBound = now - 100;
+        let trackDetail, min = 0, max = trackDetails.length - 1, mid, d, dt;
+
+        while (min <= max) {
+          // Floor of average of min and max.
+          mid = (min + max) >> 1;
+          d = trackDetails[mid];
+          if (d.timeStamp >= timeLowerBound) {
+            trackDetail = d;
+            max = mid - 1;
+          } else {
+            min = mid + 1;
+          }
+        }
+
+        if (trackDetail) {
+          d = this.horizontal ? event.detail.dy - trackDetail.d : event.detail.dx - trackDetail.d;
+          dt = (now - trackDetail.timeStamp) || 1;
+          return d / dt;
+        }
+        return 0;
+      }
+
+      _flyingDrawer(event, trackDetails) {
+        let velocity = this._calculateVelocity(event, trackDetails);
+
+        // Do not fling if velocity is not above a threshold.
+        if (Math.abs(velocity) < this._MIN_FLING_THRESHOLD) {
+          return;
+        }
+
+        this._drawerState = this._DRAWER_STATE.FLINGING;
+
+        const d = this.horizontal ? event.detail.dy + this._translateOffset : event.detail.dx + this._translateOffset,
+          drawerExpandedSide = this._getExpandedLength(),
+          isVelocityPositive = velocity > 0,
+          isClosingStart = !isVelocityPositive && this.endPositioned,
+          isClosingEnd = isVelocityPositive && !this.endPositioned;
+        let dd;
+
+        if (isClosingStart) {
+          dd = -(d + drawerExpandedSide);
+        } else if (isClosingEnd) {
+          dd = (drawerExpandedSide - d);
+        } else {
+          dd = -d;
+        }
+        // Enforce a minimum transition velocity to make the drawer feel snappx.
+        if (isVelocityPositive) {
+          velocity = Math.max(velocity, this._MIN_TRANSITION_VELOCITY);
+          this.opened = this.endPositioned;
+        } else {
+          velocity = Math.min(velocity, -this._MIN_TRANSITION_VELOCITY);
+          this.opened = !this.endPositioned;
+        }
+
+        // Calculate the amount of time needed to finish the transition based on the
+        // initial slope of the timing function.
+        let t = this._FLING_INITIAL_SLOPE * dd / velocity;
+        this._styleTransitionDuration(t);
+        this._styleTransitionTimingFunction(this._FLING_TIMING_FUNCTION);
+
+        this._resetDrawerTranslate();
+        this._debouncedResetDrawerState(t);
+      }
+
+      _styleTransitionDuration(duration) {
+        this.style.transitionDuration = duration + 'ms';
+        this.$.contentContainer.style.transitionDuration = duration + 'ms';
+        this.$.scrim.style.transitionDuration = duration + 'ms';
+      }
+
+      _styleTransitionTimingFunction(timingFunction) {
+        this.$.contentContainer.style.transitionTimingFunction = timingFunction;
+        if (this.scrim) {
+          this.$.scrim.style.transitionTimingFunction = timingFunction;
+        }
+      }
+
+      _translateDrawer(d) {
+        const drawerExpandedSide = this._getExpandedLength();
+        let transform = '';
+        requestAnimationFrame( () => {
+          switch (this.align) {
+            case 'left':
+              d = Math.max(-drawerExpandedSide, Math.min(d, 0));
+              this.$.scrim.style.opacity = 1 + d / drawerExpandedSide;
+              transform = 'translate3d(' + d + 'px,-50%,0)';
+              break;
+            case 'right':
+              d = Math.max(0, Math.min(d, drawerExpandedSide));
+              this.$.scrim.style.opacity = 1 - d / drawerExpandedSide;
+              transform = 'translate3d(' + d + 'px,-50%,0)';
+              break;
+            case 'top':
+              d = Math.max(-drawerExpandedSide, Math.min(d, 0));
+              this.$.scrim.style.opacity = 1 + d / drawerExpandedSide;
+              transform = 'translate3d(-50%', d + 'px,0)';
+              break;
+            case 'bottom':
+              d = Math.max(0, Math.min(d, drawerExpandedSide));
+              this.$.scrim.style.opacity = 1 - d / drawerExpandedSide;
+              transform = 'translate3d(-50%', d + 'px,0)';
+              break;
+          }
+          this.$.contentContainer.style.webkitTransform = transform;
+          this.$.contentContainer.style.transform = transform;
+        })
+      }
+
+      _resetDrawerTranslate() {
+        requestAnimationFrame( () => {
+          this.$.scrim.style.opacity = '';
+          this.$.contentContainer.style.webkitTransform = '';
+          this.$.contentContainer.style.transform = '';
+        })
+      }
+
+      _resetDrawerState() {
+        const oldState = this._drawerState;
+
+        // If the drawer was flinging, we need to reset the style attributes.
+        if (oldState === this._DRAWER_STATE.FLINGING) {
+          this._styleTransitionDuration(this.transitionDuration);
+          this._styleTransitionTimingFunction('');
+          this.style.visibility = '';
+        }
+
+        if (this.opened) {
+          this._drawerState = this.persistent ?
+            this._DRAWER_STATE.OPENED_PERSISTENT : this._DRAWER_STATE.OPENED;
+        } else {
+          this._drawerState = this._DRAWER_STATE.CLOSED;
+        }
+
+        if (oldState !== this._drawerState) {
+          if (this._drawerState === this._DRAWER_STATE.OPENED) {
+            document.addEventListener('keydown', this._boundEscKeydownHandler);
+            document.body.style.overflow = 'hidden';
+          } else {
+            document.removeEventListener('keydown', this._boundEscKeydownHandler);
+            document.body.style.overflow = '';
+          }
+
+          // Don't fire the event on initial load.
+          if (oldState !== this._DRAWER_STATE.INIT) {
+            this.dispatchEvent(new CustomEvent('app-drawer-transitioned', {
+              bubbles: true,
+              composed: true
+            }));
+          }
+        }
+      }
+
+      _debouncedResetDrawerState(time) {
+        if (Number.isNaN(time)) {
+          time = this.transitionDuration;
+        }
+        if (this._activeResetJob) {
+          clearTimeout(this._activeResetJob);
+        }
+        this._activeResetJob = setTimeout(() => {
+          this._resetDrawerState();
+          this._activeResetJob = null;
+        }, this.transitionDuration);
+      }
+    }
+    customElements.define(DrawerElement.is, DrawerElement);
+  </script>
+</dom-module>

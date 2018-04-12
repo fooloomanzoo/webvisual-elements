@@ -1,0 +1,52 @@
+{
+  "home": {
+    "name": "Measuring Facilities",
+    "title": "Select a measuring facility"
+  },
+  "login": {
+    "name": "Log In",
+    "title": "Please sign in",
+    "username": "Username",
+    "password": "Password",
+    "invalid-username": "invalid user-name",
+    "invalid-password": "invalid password",
+    "logout": "Log out",
+    "confirm": "Confirm",
+    "reset": "Reset"
+  },
+  "groups": {
+    "name": "Groups"
+  },
+  "list": {
+    "name": "List"
+  },
+  "detail": {
+    "name": "Details",
+    "query": "Query"
+  },
+  "menu": "Menu",
+  "settings": "Settings",
+  "view": "View",
+  "layout": "Layout",
+  "language": "Language",
+  "group by": "Grouping",
+  "dark": {
+    "true": "dark color scheme",
+    "false": "bright color scheme"
+  },
+  "plain": {
+    "true": "plain presentation",
+    "false": "windowed presentation"
+  },
+  "notification": {
+    "offline": {
+      "true": "You are offline",
+      "false": "You are online"
+    },
+    "loggedIn":  {
+      "true": "You are signed in",
+      "false": "You are signed out"
+    },
+    "loaded": "loaded"
+  }
+}

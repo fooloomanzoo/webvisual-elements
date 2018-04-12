@@ -1,0 +1,266 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="device-mixin.html">
+<link rel="import" href="../mixins/color-mixin.html">
+<link rel="import" href="../mixins/checked-and-select-mixin.html">
+
+<dom-module id="device-sign">
+  <template strip-whitespace>
+    <style>
+      :host {
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        font-family: 'Fira Sans', sans-serif;
+        cursor: pointer;
+        pointer-events: all;
+        outline: none;
+        -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;
+        -webkit-touch-callout: none; -webkit-tap-highlight-color: rgba(0,0,0,0);
+        font-weight: 400;
+        width: auto;
+        min-width: 4em;
+        min-height: 4em;
+        align-self: stretch;
+        background-color: var(--device-state-inrange-color, var(--device-color));
+        color: var(--device-text-color, currentColor);
+        will-change: background-color;
+        transition: background-color 250ms cubic-bezier(0.3, 0, 0.15, 1);
+        --computed-device-sign-shim: var(--device-sign-shim, linear-gradient(180deg,rgba(255,255,255,0),rgba(255,255,255,0.1),rgba(255,255,255,0)));
+        --computed-device-exceeding-sign-shim: var(--device-sign-exceeding-shim, linear-gradient(180deg,rgba(255,255,255,0),rgba(255,255,255,0.125),rgba(255,255,255,0)));
+      }
+
+      :host([state="0"]) {
+        background-color: var(--device-state-inrange-color);
+        color: var(--device-state-inrange-text-color);
+      }
+      :host([state="1"]) {
+        background-color: var(--device-state-exceeds-color);
+        color: var(--device-state-exceeds-text-color);
+      }
+      :host([state="-1"]) {
+        background-color: var(--device-state-deceeds-color);
+        color: var(--device-state-deceeds-text-color);
+      }
+      .value {
+        position: absolute;
+        top: 0; bottom: 0; left: 0; right: 0;
+        display: inline-flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        padding: 0.3em 0.3em 0.5em 0.3em;
+        box-sizing: border-box;
+        overflow: hidden;
+      }
+      .value::before {
+        position: absolute;
+        top: 0; bottom: 0; left: 0; right: 0;
+        content: "";
+        pointer-events: none;
+        background: var(--computed-device-sign-shim);
+      }
+      :host([state="1"]) .value::before, :host([state="-1"]) .value::before {
+        will-change: transform;
+        background: var(--computed-device-exceeding-sign-shim);
+        animation-name: sign-background-rotate;
+        animation-duration: 1800ms;
+        animation-fill-mode: both;
+        animation-timing-function: linear;
+        animation-iteration-count: infinite;
+      }
+      @keyframes sign-background-rotate {
+        0%   { transform: rotate(0deg);  }
+        100% { transform: rotate(360deg); }
+      }
+      #valueSection {
+        display: flex;
+        flex-direction: row;
+        align-items: baseline;
+        justify-content: center;
+        max-width: 100%;
+        text-align: center;
+      }
+      #value {
+        font-size: 0.9em;
+        padding-right: 0.15em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      #unitSection {
+        font-size: 0.7em;
+      }
+      #dateSection {
+        position: absolute;
+        pointer-events: none;
+        padding: 0.15em 1rem;
+        font-size: 0.55em;
+        bottom: 0;
+        width: 100%;
+        box-sizing: border-box;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        text-align: center;
+      }
+      svg {
+        fill: currentColor;
+        cursor: pointer;
+        outline: none;
+        height: 1em;
+        width: 1em;
+      }
+      #sign[bottom] {
+        display: none;
+        position: absolute;
+        left: 0;
+        bottom: 0;
+      }
+      #sign:not([bottom]) {
+        height: 1.5em;
+        width: 1.5em;
+      }
+      :host([state="1"]) #sign, :host([state="-1"]) #sign {
+        display: initial;
+      }
+      #ripple {
+        pointer-events: none;
+        border-radius: inherit;
+      }
+      #bookmark {
+        position: absolute;
+        right: 0;
+        top: 0;
+        opacity: 0.9;
+        will-change: transform, opacity;
+        transform-origin: center;
+        transition: transform 300ms cubic-bezier(0.3, 0, 0.1, 1), opacity 300ms cubic-bezier(0.3, 0, 0.1, 1);
+      }
+      #bookmark:hover {
+        transform: scale(1.4);
+        opacity: 1;
+      }
+      #checkbox {
+        pointer-events: none;
+        position: absolute;
+        opacity: 0.6;
+        right: 0;
+        bottom: 0;
+      }
+      [hidden] {
+        pointer-events: none;
+        display: none !important;
+      }
+    </style>
+
+    <div class="value">
+      <template is="dom-if" if="[[selectable]]">
+        <paper-ripple id="ripple" recenters></paper-ripple>
+      </template>
+
+      <div id="valueSection" hidden$="[[item.isIndicatorLamp]]">
+        <span id="value"></span>
+        <span id="unitSection">[[item.unit]]</span>
+      </div>
+
+      <svg id="sign" bottom$="[[!item.isIndicatorLamp]]" aria-label="Alarm" viewBox="0 0 24 24">
+        <g><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></g>
+      </svg>
+    </div>
+
+    <span id="dateSection" hidden$="[[!showDate]]"></span>
+
+    <svg id="bookmark" hidden$="[[!hasExceeded]]"
+      viewBox="0 0 24 24"
+      on-click="_requestExceedingDetails">
+      <g id="announcement"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 9h-2V5h2v6zm0 4h-2v-2h2v2z"/></g>
+    </svg>
+
+    <template is="dom-if" if="[[checked]]">
+      <svg id="checkbox"
+        viewBox="0 0 24 24">
+        <g id="playlist-add-check"><path d="M14 10H2v2h12v-2zm0-4H2v2h12V6zM2 16h8v-2H2v2zm19.5-4.5L23 13l-6.99 7-4.51-4.5L13 14l3.01 3 5.49-5.5z"/></g>
+      </svg>
+    </template>
+
+  </template>
+
+  <script>
+  class DeviceSign extends WebvisualMixins.CheckedAndSelectMixin(WebvisualMixins.ColorMixin(WebvisualMixins.DeviceMixin(Polymer.Element))) {
+
+    static get is() {
+      return 'device-sign';
+    }
+
+    static get properties() {
+      return {
+        showDate: {
+          type: Boolean,
+          value: false
+        },
+
+        viewLength: {
+          type: Number,
+          value: 1
+        }
+
+      }
+    }
+
+      insertValues(values) {
+        if (values && values.length) {
+          setTimeout( () => {
+
+            if (!this._initialized)
+              this._initialized = true;
+
+            const value = values[values.length-1];
+
+            if (!this.item.isIndicatorLamp) {
+              this.$.value.textContent = this.computeValue(value.y);
+            }
+
+            if (this.showDate)
+              this.$.dateSection.textContent = this.computeDate(value.x);
+
+            if (this.item.exceedable) {
+              const state = this.checkExceedingState(value);
+              if (!this.hasAttribute('state') || this.state !== state) {
+                this.setAttribute('state', state);
+              }
+            }
+
+          }, 0);
+        } else {
+          this.renderClearing();
+        }
+      }
+
+      computeValue(y) {
+        return y;
+      }
+
+      renderClearing() {
+        if (!this._initialized) {
+          this.hasExceeded = false;
+          this.isExceeding = false;
+        }
+        this.$.value.textContent = '';
+        this.$.dateSection.textContent = '';
+        this.setAttribute('state', null);
+      }
+
+      _requestExceedingDetails() {
+        this.dispatchEvent(new CustomEvent('request-exceeding-details', {
+          bubbles: true,
+          composed: true,
+          detail: {
+            item: this.item
+          }
+        }));
+      }
+    }
+    customElements.define(DeviceSign.is, DeviceSign);
+  </script>
+
+</dom-module>
