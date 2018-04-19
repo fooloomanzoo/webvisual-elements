@@ -1,22 +1,24 @@
 <link rel="import" href="/bower_components/polymer/polymer.html">
 <link rel="import" href="/login/accessibility-mixin.html">
+<link rel="import" href="/login/login-dialog.html">
 
 <dom-module id="login-test-element">
   <template>
     <style>
       :host {
         display: block;
+        padding: 16px;
       }
     </style>
     <template is="dom-if" if="[[loggedIn]]">
-      <h2>you are logged in</h2>
+      <h3>you are logged in</h2>
       <template is="dom-if" if="[[_loadFunctionCalled]]">
-        <h2>_load()-Function is called</h2>
+        <p>_load()-Function is called</p>
         <button on-click="signOut">sign out</button>
       </template>
     </template>
     <template is="dom-if" if="[[!loggedIn]]">
-      <h2>you are not logged in</h2>
+      <h3>you are not logged in</h3>
     </template>
     <button on-click="openLoginDialog">open login-dialog</button>
   </template>

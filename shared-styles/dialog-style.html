@@ -5,61 +5,56 @@
   <template>
     <style>
       :host {
-        @apply --layout-vertical;
-        @apply --layout-start;
-        padding: 0.75em;
-        margin: 0.75em;
-        border-radius: 8px;
-        background-color: var(--dialog-background-color, #f1f1f1);
-        color: var(--dialog-color, var(--primary-text-color));
-        --dialog-shadow: 0 8px 10px 1px rgba(0, 0, 0, 0.14), 0 3px 14px 2px rgba(0, 0, 0, 0.12), 0 5px 5px -3px rgba(0, 0, 0, 0.4);
-        box-shadow: var(--dialog-shadow);
         opacity: 0;
         will-change: opacity;
         transition: opacity 300ms cubic-bezier(0.6, 0, 0.2, 1);
-        @apply --dialog-style;
       }
       :host([opened]) {
         opacity: 1;
       }
+      .content {
+        @apply --layout-vertical;
+        @apply --layout-start;
+        padding: 2.75em 0.75em 0.75em 0.75em;
+        margin: 0.75em;
+        border-radius: 8px;
+        box-shadow: var(--dialog-shadow, 0 8px 10px 1px rgba(0, 0, 0, 0.14), 0 3px 14px 2px rgba(0, 0, 0, 0.12), 0 5px 5px -3px rgba(0, 0, 0, 0.4));
+        @apply --dialog-style;
+        background-color: var(--dialog-background-color, #f1f1f1);
+        color: var(--dialog-color, var(--primary-text-color));
+      }
       .no-margin {
         margin: 0;
       }
-      ::slotted(*) {
-        position: relative;
-        box-sizing: border-box;
-        align-self: stretch;
-      }
-      ::slotted([dialog-title]) {
+      [dialog-title] {
         @apply --layout-vertical;
         @apply --layout-center-center;
-        margin: 0.5em 0 1em 0;
-        padding: 0 2em;
+        margin: 0em 0 1.5em 0;
         @apply --dialog-title;
         flex: 0 0 auto;
       }
-      ::slotted([dialog-title] > *) {
+      [dialog-title] > * {
         font-size: 1.2em;
         font-weight: 500;
       }
-      ::slotted([dialog-content]) {
+      [dialog-content] {
         flex: 1 1 auto;
         @apply --layout-vertical;
-        border-top: thin solid var(--grid-border-color, #aaa);
-        border-bottom: thin solid var(--grid-border-color, #aaa);
         overflow: auto;
       }
-      ::slotted([dialog-content][horizontal]) {
+      [dialog-content][horizontal] {
         @apply --layout-horizontal;
       }
-      ::slotted([dialog-bottom]) {
+      [dialog-bottom] {
         @apply --layout-horizontal;
-        @apply --layout-center-center;
+        align-self: stretch;
+        justify-content: flex-end;
+        font-size: 0.9em;
         padding: 0 0.5em;
         flex-wrap: wrap;
-        flex: 0 0 auto;
+        flex: 1 0 auto;
       }
-      ::slotted(.button) {
+      .button {
         margin-left: 0.5em;
       }
     </style>

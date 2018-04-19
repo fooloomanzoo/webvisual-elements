@@ -37,12 +37,17 @@
           signOutUrl: {
             type: String,
             value: '/logout'
+          },
+
+          signOutUrl: {
+            type: String,
+            value: '/auth'
           }
         }
       }
 
       static get observers() {
-        '_signInOutUrlsChanged(signInUrl, signOutUrl)'
+        '_signInOutUrlsChanged(signInUrl, signOutUrl, authUrl)'
       }
 
       connectedCallback() {
@@ -51,7 +56,6 @@
         window.addEventListener('online', this._load);
         window.addEventListener('offline', this._load);
         window.addEventListener('logged-in', this._load);
-        this._load();
       }
 
       disconnectedCallback() {
@@ -61,11 +65,15 @@
         window.removeEventListener('logged-in', this._load);
       }
 
-      _signInOutUrlsChanged(signInUrl, signOutUrl) {
+      _signInOutUrlsChanged(signInUrl, signOutUrl, authUrl) {
         window.WebvisualLoginDialog.signInUrl = signInUrl || '/login';
         window.WebvisualLoginDialog.signOutUrl = signOutUrl || '/logout';
+        window.WebvisualLoginDialog.authUrl = authUrl || '/auth';
       }
 
+      /**
+       * @overwrite
+       */
       _load() {
         this.offline = !Boolean(window.navigator.onLine);
         this.loggedIn = Boolean(window._loggedIn);

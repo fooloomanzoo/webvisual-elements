@@ -12,7 +12,7 @@ module.exports = function() {
           passwordField : 'password'
       }, function(username, password, done) {
         console.log(`--> incoming request of "${username}"`);
-        if (username) {
+        if (username && password !== 'reject') {
           console.log(`Authentification of "${username}" ${password ? 'with' : 'without'} password`, );
           return done(null, {username: username});
         } else {

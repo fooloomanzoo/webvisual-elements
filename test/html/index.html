@@ -8,7 +8,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
 
-    <script src="bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+    <script src="bower_components/webcomponentsjs/webcomponents-loader.js"></script>
 
     <link rel="import" href="/bower_components/polymer/polymer.html">
     <link rel="import" href="/bower_components/iron-pages/iron-pages.html">
@@ -82,7 +82,7 @@
 
   <body unresolved>
 
-    <dom-bind>
+    <dom-bind id="bind">
       <template>
         <iron-pages selected="{{selected}}">
           <div class="page">
@@ -104,6 +104,11 @@
         <app-drawer id="drawer" swipe-open></app-drawer>
       </template>
     </dom-bind>
+
+    <script>
+      const bind = document.querySelector('#bind');
+      bind.selected = 0;
+    </script>
 
   </body>
 </html>

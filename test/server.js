@@ -104,7 +104,7 @@ const multiFields = multer({
 app.post('/login', multiFields.fields([]), passport.authenticate('passport-local-plugin'),
   (req, res) => {
     console.log('<---send', req.user);
-    res.status(200).json(req.user);
+    res.status(200).send(req.user);
   });
 
 // Auth Test
