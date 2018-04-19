@@ -196,22 +196,10 @@
         this.signedIn = this.signedIn.bind(this);
         this.signIn = this.signIn.bind(this);
         this.signOut = this.signOut.bind(this);
-        this.autoSignIn('silent');
-        window.addEventListener('online', this.autoSignIn);
-        window.addEventListener('offline', this.autoSignIn);
+        this.autoSignIn('optional');
+        window.addEventListener('online', this.autoSignIn.bind(this, 'silent'));
+        window.addEventListener('offline', this.autoSignIn.bind(this, 'silent'));
       }
-
-      // _load() {
-      //   super._load();
-      //   if (this.offline || this.loggedIn) {
-      //     return;
-      //   }
-      //   this.autoSignIn('silent');
-      //   requestAnimationFrame(() => {
-      //     window.addEventListener('online', this.autoSignIn);
-      //     this.$.dialog.center();
-      //   });
-      // }
 
       /*
        * Let users sign-in without typing credentials
@@ -230,23 +218,23 @@
           }
           p = navigator.credentials.get(req)
             .then(cred => {
-              if (cred && cred.type === 'password') {
-                // console.log('auto sign-in performed');
-                // If `password` is `undefined`, this API is older version
+              console.log(req, cred);
+              // If `password` is not `undefined`, this API is new version
+              // which means this is Chrome 60 or later
+              if (cred && cred.password !== undefined) {
+                // create a pseudo form and send it
+                let form = new FormData();
+                form.append('id', cred.id);
+                form.append('username', cred.name);
+                form.append('password', cred.password);
+                return this.signIn.call(this, this.signInUrl, 'include', form);
+              } // If `password` is `undefined`, this API is older version
                 // which means this is Chrome 51 - 59
-                if (cred.password === undefined) {
-                  // cred.idName = 'username';
-                  return this.signIn.call(this, this.signInUrl, cred);
-                // If `password` is not `undefined`, this API is new version
-                // which means this is Chrome 60 or later
-                } else {
-                  let form = new FormData();
-                  form.append('username', cred.id);
-                  form.append('password', cred.password);
-                  return this.signIn.call(this, this.signInUrl, 'include', form);
-                }
+              else if (cred && cred.password === undefined) {
+                cred.idName = 'username';
+                return this.signIn.call(this, this.signInUrl, cred);
               } else {
-                console.log('auto sign-in not performed');
+                // console.log('auto sign-in not performed');
                 // Fallback to server to check, if session-cookies are valid
                 return this.signIn.call(this, '/auth');
               }
@@ -302,44 +290,6 @@
        * When password sign-in button is pressed.
        * @return {void}
        */
-      onSubmit(e) {
-        e.preventDefault();
-        console.log(e, this);
-        const regForm = this.root.querySelector('#signinform');
-
-        if (regForm.validate && !regForm.validate()) return;
-
-        const regFormData = new FormData(regForm);
-
-        const username = regFormData.get('username');
-        const password = regFormData.get('password');
-        console.log(regForm, username, password);
-
-        // Sign-In
-        this.signIn(this.signInUrl, 'include', regForm)
-          .then(res => {
-            console.log(res, regFormData, username, password);
-            this.dispatchEvent(new CustomEvent('announce', {
-              detail: this.localize ? this.localize('notification', 'loggedIn', true) : 'You are signed in',
-              bubbles: true,
-              composed: true
-            }));
-            if (window.PasswordCredential) {
-              let form = new FormData();
-              form.append('username', username);
-              form.append('password', password);
-              const cred = new PasswordCredential(regForm);
-              return navigator.credentials.store(cred)
-                .then(() => {
-                  console.info('credentials are stored');
-                })
-            }
-          })
-      }
-      /*
-       * When password sign-in button is pressed.
-       * @return {void}
-       */
       onPreSubmit(e) {
         e.preventDefault();
         console.log(e, this);
@@ -349,14 +299,15 @@
 
         const regFormData = new FormData(regForm._form);
 
-        const username = regFormData.get('username');
         const password = regFormData.get('password');
+        const username = regFormData.get('username');
+        const id = regFormData.get('id') || username;
         console.log(regForm, regFormData, username, password);
 
         // Sign-In
         this.signIn(this.signInUrl, 'include', regFormData)
           .then(res => {
-            console.log(res);
+            console.log(res, res.body, res.body.json());
             this.dispatchEvent(new CustomEvent('announce', {
               detail: this.localize ? this.localize('notification', 'loggedIn', true) : 'You are signed in',
               bubbles: true,
@@ -364,8 +315,9 @@
             }));
             if (window.PasswordCredential) {
               const cred = new PasswordCredential({
-                id: username,
-                password: username
+                id: id,
+                name: username,
+                password: password
               });
               return navigator.credentials.store(cred)
                 .then(() => {
@@ -398,6 +350,9 @@
             credentials: cred || 'include'
           })
           .then(this.signedIn.bind(this))
+          .then(userProfile => {
+            console.log(userProfile);
+          })
           .catch( err => {
             this.notSignedIn(err);
           });
@@ -430,19 +385,16 @@
        * @param  {Object} profile Profile information object
        * @return {Promise} Resolves when authentication succeeded.
        */
-      signedIn(profile) {
-        console.log(profile);
-        if (profile && profile.username) {
-          window._loggedIn = this.loggedIn = true;
-          this.userProfile = {
-            username: profile.username
-          };
+      signedIn(res) {
+        console.log(res, res.body);
+        window._loggedIn = this.loggedIn = res.status === 200;
+        if (this.loggedIn) {
           window.dispatchEvent(new CustomEvent('logged-in', {
             detail: this.loggedIn,
             bubbles: true,
             composed: true
           }));
-          return Promise.resolve(profile);
+          return Promise.resolve(res.json());
         } else {
           return Promise.reject();
         }
