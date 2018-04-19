@@ -13,6 +13,10 @@
     "iron-icons": "PolymerElements/iron-icons",
     "iron-list": "PolymerElements/iron-list",
     "paper-ripple": "PolymerElements/paper-ripple",
-    "paper-dialog-behavior": "PolymerElements/paper-dialog-behavior"
+    "paper-dialog-behavior": "PolymerElements/paper-dialog-behavior",
+    "datetime-picker": "fooloomanzoo/datetime-picker#2",
+    "color-picker": "fooloomanzoo/color-picker#2",
+    "number-input": "fooloomanzoo/number-input#2",
+    "text-input": "fooloomanzoo/text-input#2"
   }
 }
