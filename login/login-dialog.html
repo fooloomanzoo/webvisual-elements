@@ -343,10 +343,10 @@
        * Let user sign-out
        */
       signOut() {
-        return fetch(url, {
+        return fetch(this.signOutUrl, {
             method: 'POST',
             body: JSON.stringify(this.userProfile),
-            credentials: cred || 'include'
+            credentials: 'include'
           })
           .then(() => {
             if (navigator.credentials) {
