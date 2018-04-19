@@ -1,10 +1,11 @@
 {
   "name": "webvisual-elements",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "webcomponents for webvisual-server",
   "main": "index.js",
   "scripts": {
-    "postinstall": "cd test && bower update -f",
+    "postinstall": "npm run build && cd test && bower update -f",
+    "build": "rollup -c && uglifyjs scripts/d3.bundle.js -c -m -o scripts/d3.bundle.js",
     "test": "start https://localhost:3000 && node test/server.js"
   },
   "author": "fooloomanzoo",
@@ -30,5 +31,11 @@
     "socket.io": "*",
     "spdy": "*",
     "x-frame-options": "*"
+  },
+  "dependencies": {
+    "d3": "*",
+    "rollup": "*",
+    "rollup-plugin-node-resolve": "*",
+    "uglify-js": "*"
   }
 }
