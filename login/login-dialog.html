@@ -353,6 +353,10 @@
               navigator.credentials.requireUserMediation && navigator.credentials.requireUserMediation();
               navigator.credentials.preventSilentAccess && navigator.credentials.preventSilentAccess();
             }
+            const passwordInput = this.root.querySelector('#password');
+            if (passwordInput) {
+              passwordInput.value = '';
+            }
             this.loggedIn = false;
             this.userProfile = null;
             if (!this.offline) {
@@ -392,18 +396,6 @@
           bubbles: true,
           composed: true
         }));
-
-        if (this.loggedIn || window._loggedIn) {
-          // reset inputs
-          const usernameInput = this.root.querySelector('#username');
-          const passwordInput = this.root.querySelector('#password');
-          if (usernameInput) {
-            usernameInput.value = '';
-          }
-          if (passwordInput) {
-            passwordInput.value = '';
-          }
-        }
 
         if (err && err.statusCode) {
           if (err.statusCode >= 400 && err.statusCode < 500) {
