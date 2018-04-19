@@ -107,7 +107,7 @@
               <iron-icon class="left" icon="close"></iron-icon>
               <input type="reset" value$="{{localize('login', 'reset')}}"/>
             </div>
-            <div class="button" on-click="onSubmit">
+            <div class="button">
               <paper-ripple></paper-ripple>
               <iron-icon class="left" icon="juelich:logo"></iron-icon>
               <input type="submit" value$="{{localize('login', 'confirm')}}"/>
@@ -191,6 +191,9 @@
       connectedCallback() {
         super.connectedCallback();
         this.autoSignIn = this.autoSignIn.bind(this);
+        this.signedIn = this.signedIn.bind(this);
+        this.signIn = this.signIn.bind(this);
+        this.signOut = this.signOut.bind(this);
         this.autoSignIn('silent');
         window.addEventListener('online', this.autoSignIn);
         window.addEventListener('offline', this.autoSignIn);
@@ -251,7 +254,7 @@
           // Resolve if Credential Management API is not available
           // Fallback to server to check, if session-cookies are valid
           console.log('auto sign-in not available');
-          p = this.signIn.call(this, '/auth');
+          p = this.signIn('/auth');
         }
         Promise.resolve(p)
           .then(profile => {
@@ -299,8 +302,8 @@
        */
       onSubmit(e) {
         e.preventDefault();
-
-        const regForm = e.target;
+        console.log(this, e);
+        const regForm = e.target || (e.path || e.path[0]);
 
         if (regForm.validate && !regForm.validate()) return;
 
@@ -308,37 +311,28 @@
 
         const username = regFormData.get('username');
         const password = regFormData.get('password');
+        console.log(regForm, username, password);
 
         // Sign-In
         this.signIn(this.signInUrl, 'include', regFormData)
-          .then(() => {
-            if (navigator.credentials) {
-              const cred = new PasswordCredential({
-                id: username,
-                username: username,
-                password: password
-              });
-              navigator.credentials.store(cred).then(() => {
-                console.info('credentials are stored');
-              });
-            }
+          .then(res => {
+            console.log(res, regFormData, username, password);
             this.dispatchEvent(new CustomEvent('announce', {
               detail: this.localize ? this.localize('notification', 'loggedIn', true) : 'You are signed in',
               bubbles: true,
               composed: true
             }));
-          }, () => {
-            // Polymer event to notice user that 'Authentication failed'.
-            this.loggedIn = false;
-            this.dispatchEvent(new CustomEvent('announce', {
-              detail: this.localize ? this.localize('notification', 'loggedIn', false) : 'You are not signed in',
-              bubbles: true,
-              composed: true
-            }));
-            if (!this.offline) {
-              this.open();
+            if (window.PasswordCredential) {
+              let form = new FormData();
+              form.append('username', username);
+              form.append('password', password);
+              const cred = new PasswordCredential(form);
+              return navigator.credentials.store(cred)
+                .then(() => {
+                  console.info('credentials are stored');
+                })
             }
-          });
+          })
       }
 
       onReset() {
@@ -352,9 +346,15 @@
        * @return {Promise} Returns result of `noCredApiSignIn()`
        */
       signIn(url, cred, formData) {
-        return this._fetch(url, 'POST', cred || 'include', 'json', null, null, false, formData)
+        return fetch(url, {
+            method: 'POST',
+            body: formData,
+            credentials: cred || 'include'
+          })
           .then(this.signedIn.bind(this))
-          .catch(this.notSignedIn.bind(this));
+          .catch( err => {
+            this.notSignedIn(err);
+          });
       }
 
       /**
@@ -385,6 +385,7 @@
        * @return {Promise} Resolves when authentication succeeded.
        */
       signedIn(profile) {
+        console.log(profile);
         if (profile && profile.username) {
           window._loggedIn = this.loggedIn = true;
           this.userProfile = {
@@ -402,19 +403,15 @@
       }
 
       notSignedIn(err) {
-        console.warn('not signed in', err);
         let status = '';
+
+        window.dispatchEvent(new CustomEvent('logged-in', {
+          detail: this.loggedIn,
+          bubbles: true,
+          composed: true
+        }));
+
         if (this.loggedIn || window._loggedIn) {
-          window.dispatchEvent(new CustomEvent('logged-in', {
-            detail: this.loggedIn,
-            bubbles: true,
-            composed: true
-          }));
-          this.dispatchEvent(new CustomEvent('announce', {
-            detail: status ? status : '',
-            bubbles: true,
-            composed: true
-          }));
           const usernameInput = this.root.querySelector('#username');
           const passwordInput = this.root.querySelector('#password');
           if (usernameInput) {
@@ -423,18 +420,26 @@
           if (passwordInput) {
             passwordInput.value = '';
           }
-          if (err && err.statusCode) {
-            if (err.statusCode >= 400 && err.statusCode < 500) {
-              status = 'Login with Server failed';
-            } else if (err.statusCode >= 500 && err.statusCode < 600) {
-              status = 'Server-Error occured';
-            } else {
-              status = 'Unknown Error occured';
-            }
-          }
-          this.loggedIn = false;
-          window._loggedIn = false;
         }
+
+        if (err && err.statusCode) {
+          if (err.statusCode >= 400 && err.statusCode < 500) {
+            status = 'Login with Server failed';
+          } else if (err.statusCode >= 500 && err.statusCode < 600) {
+            status = 'Server-Error occured';
+          } else {
+            status = 'Unknown Error occured';
+          }
+        }
+        console.warn('not signed in:', status ||'', err || (err && err.statusCode) || '');
+        this.dispatchEvent(new CustomEvent('announce', {
+          detail: status ? status : '',
+          bubbles: true,
+          composed: true
+        }));
+
+        this.loggedIn = false;
+        window._loggedIn = false;
         if (!this.offline) {
           this.open();
         }

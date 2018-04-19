@@ -11,8 +11,9 @@ module.exports = function() {
           usernameField : 'username',
           passwordField : 'password'
       }, function(username, password, done) {
+        console.log(`--> incoming request of "${username}"`);
         if (username) {
-          console.log(`Authentification of ${username} ${password ? 'with' : 'without'} password`, );
+          console.log(`Authentification of "${username}" ${password ? 'with' : 'without'} password`, );
           return done(null, {username: username});
         } else {
           console.log(`Authentification failed, username-field is empty`);
