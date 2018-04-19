@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "postinstall": "cd test && bower update -f",
-    "test": "start https://127.0.0.1:3000 && node test/server.js"
+    "test": "start https://localhost:3000 && node test/server.js"
   },
   "author": "fooloomanzoo",
   "license": "MIT",

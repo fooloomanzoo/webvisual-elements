@@ -20,6 +20,7 @@
     <link rel="import" href="/bower_components/iron-flex-layout/iron-flex-layout.html">
     <link rel="import" href="/bower_components/iron-icons/iron-icons.html">
     <link rel="import" href="/bower_components/paper-icon-button/paper-icon-button.html">
+    <link rel="import" href="/login/login-test-element.html">
 
     <custom-style>
       <style is="custom-style">
@@ -68,7 +69,7 @@
           padding-top: 136px;
           box-sizing: border-box;
         }
-        iframe {
+        .page {
           height: 100%;
           width: 100%;
           box-sizing: border-box;
@@ -84,7 +85,9 @@
     <dom-bind>
       <template>
         <iron-pages selected="{{selected}}">
-          <iframe src="/login/index.html"></iframe>
+          <div class="page">
+            <login-test-element></login-test-element>
+          </div>
         </iron-pages>
         <app-header reveals>
           <app-toolbar>

@@ -71,8 +71,12 @@
         this.loggedIn = Boolean(window._loggedIn);
       }
 
-      _openLoginDialog() {
+      openLoginDialog() {
         window.WebvisualLoginDialog.open();
+      }
+
+      signOut() {
+        window.WebvisualLoginDialog.signOut();
       }
     }
   }

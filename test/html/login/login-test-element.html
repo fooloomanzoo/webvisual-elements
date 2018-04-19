@@ -12,12 +12,13 @@
       <h2>you are logged in</h2>
       <template is="dom-if" if="[[_loadFunctionCalled]]">
         <h2>_load()-Function is called</h2>
+        <button on-click="signOut">sign out</button>
       </template>
     </template>
     <template is="dom-if" if="[[!loggedIn]]">
       <h2>you are not logged in</h2>
     </template>
-    <button on-click="_openLoginDialog">open login-dialog</button>
+    <button on-click="openLoginDialog">open login-dialog</button>
   </template>
 
   <script>

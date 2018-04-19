@@ -7,6 +7,13 @@
 <link rel="import" href="../shared-styles/input-style.html">
 <link rel="import" href="../shared-styles/button-style.html">
 
+/**
+ * RESSOURCES:
+ *   https://credential-management-sample.appspot.com/
+ *   https://github.com/GoogleChromeLabs/credential-management-sample/blob/master/static/scripts/app.js
+ *   https://developers.google.com/web/fundamentals/security/credential-management/save-forms
+ */
+
 <dom-module id="login-dialog">
   <template strip-whitespace>
     <style include="input-style button-style">
@@ -75,7 +82,7 @@
           <div>{{localize('login', 'title')}}</div>
         </div>
 
-        <form dialog-content id="signinform" on-submit="onSubmit" method="POST">
+        <form dialog-content id="signinform" on-submit="onSubmit" method="POST" action="[[signInUrl]]">
           <section class="input">
             <iron-icon class="left" icon="person-add"></iron-icon>
             <input id="username" autocomplete="username" name="username" type="text" pattern=".{1,32}\..{1,32}" autocorrect="off" autocapitalize="off" spellcheck="off" placeholder$="{{localize('login', 'username')}}" required>
@@ -293,20 +300,24 @@
       onSubmit(e) {
         e.preventDefault();
 
-        const signinForm = this.root.querySelector('#signinform');
+        const regForm = e.target;
 
-        if (signinForm.validate && !signinForm.validate()) return;
+        if (regForm.validate && !regForm.validate()) return;
 
-        if (!signinForm.elements.username.value || !signinForm.elements.password.value) {
-          this.notSignedIn.call(this, 401, 'password or username are empty');
-          return;
-        }
+        const regFormData = new FormData(regForm);
+
+        const username = regFormData.get('username');
+        const password = regFormData.get('password');
 
         // Sign-In
-        this.signIn(this.signInUrl, 'include', new FormData(signinForm))
+        this.signIn(this.signInUrl, 'include', regFormData)
           .then(() => {
             if (navigator.credentials) {
-              const cred = new PasswordCredential(signinForm);
+              const cred = new PasswordCredential({
+                id: username,
+                username: username,
+                password: password
+              });
               navigator.credentials.store(cred).then(() => {
                 console.info('credentials are stored');
               });
