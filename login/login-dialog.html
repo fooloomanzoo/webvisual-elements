@@ -202,12 +202,11 @@
       }
 
       /*
-       * Let users sign-in without typing credentials
-       * @param  {Boolean} unmediated Determines if user mediation is required.
-       * @return {Promise} Resolves if credential info is available.
+       * Let users auto-signin
        */
       autoSignIn(mediation) {
         let req, p;
+        // mediation options
         mediation = (['silent', 'optional', 'required'].indexOf(mediation) === -1) ? 'silent' : mediation;
         if (navigator.credentials) {
           // Actual Credential Management API call to get credential object
@@ -218,7 +217,6 @@
           }
           p = navigator.credentials.get(req)
             .then(cred => {
-              console.log(req, cred);
               // If `password` is not `undefined`, this API is new version
               // which means this is Chrome 60 or later
               if (cred && cred.password !== undefined) {
@@ -234,7 +232,6 @@
                 cred.idName = 'username';
                 return this.signIn.call(this, this.signInUrl, cred);
               } else {
-                // console.log('auto sign-in not performed');
                 // Fallback to server to check, if session-cookies are valid
                 return this.signIn.call(this, '/auth');
               }
@@ -248,29 +245,24 @@
         }
         Promise.resolve(p)
           .then(profile => {
+            this.userProfile = profile;
             // When auto sign-in didn't resolve with a profile
             // it's failed to get credential information.
-            if (!profile) {
-              if (this.loggedIn || window._loggedIn) {
-                this.dispatchEvent(new CustomEvent('announce', {
-                  detail: this.localize ? this.localize('notification', 'loggedIn', false) : 'You are not signed in',
-                  bubbles: true,
-                  composed: true
-                }));
-              }
-              this.loggedIn = false;
-              window._loggedIn = false;
+            if (!(profile && profile.username)) {
+              window._loggedIn = this.loggedIn = false;
               this.dispatchEvent(new CustomEvent('announce', {
                 detail: this.localize ? this.localize('notification', 'loggedIn', false) : 'You are not signed in',
                 bubbles: true,
                 composed: true
               }));
+              this.open();
             } else {
               this.dispatchEvent(new CustomEvent('announce', {
                 detail: this.localize ? this.localize('notification', 'loggedIn', true) : 'You are signed in',
                 bubbles: true,
                 composed: true
               }));
+              this.close();
             }
           })
           .catch(err => {
@@ -287,12 +279,11 @@
       }
 
       /*
-       * When password sign-in button is pressed.
-       * @return {void}
+       * prevents form-submit and send fetch-request
        */
       onPreSubmit(e) {
         e.preventDefault();
-        console.log(e, this);
+
         const regForm = this.root.querySelector('#signinform');
 
         if (regForm.validate && !regForm.validate()) return;
@@ -302,17 +293,10 @@
         const password = regFormData.get('password');
         const username = regFormData.get('username');
         const id = regFormData.get('id') || username;
-        console.log(regForm, regFormData, username, password);
 
         // Sign-In
         this.signIn(this.signInUrl, 'include', regFormData)
           .then(res => {
-            console.log(res, res.body, res.body.json());
-            this.dispatchEvent(new CustomEvent('announce', {
-              detail: this.localize ? this.localize('notification', 'loggedIn', true) : 'You are signed in',
-              bubbles: true,
-              composed: true
-            }));
             if (window.PasswordCredential) {
               const cred = new PasswordCredential({
                 id: id,
@@ -327,9 +311,11 @@
           })
       }
 
+      /**
+       * calls iro-form's submit
+       */
       submit(e) {
         e.preventDefault();
-        console.log(this.$.signinform);
         this.$.signinform.submit();
       }
 
@@ -339,9 +325,7 @@
       }
 
       /*
-       * Let user sign-in using id/password
-       * @param  {CredentialObject} cred FormData or CredentialObject
-       * @return {Promise} Returns result of `noCredApiSignIn()`
+       * Let user sign-in
        */
       signIn(url, cred, formData) {
         return fetch(url, {
@@ -350,9 +334,6 @@
             credentials: cred || 'include'
           })
           .then(this.signedIn.bind(this))
-          .then(userProfile => {
-            console.log(userProfile);
-          })
           .catch( err => {
             this.notSignedIn(err);
           });
@@ -360,12 +341,13 @@
 
       /**
        * Let user sign-out
-       * @param  {CredentialObject} cred FormData or CredentialObject
-       * @return {Promise} Returns result of `noCredApiSignIn()`
        */
       signOut() {
-        // POST-ing credential object will be converted to FormData object
-        return this._fetch(this.signOutUrl, 'POST', 'include', 'json', null, false, false, JSON.stringify(this.userProfile))
+        return fetch(url, {
+            method: 'POST',
+            body: JSON.stringify(this.userProfile),
+            credentials: cred || 'include'
+          })
           .then(() => {
             if (navigator.credentials) {
               navigator.credentials.requireUserMediation && navigator.credentials.requireUserMediation();
@@ -381,12 +363,9 @@
       }
 
       /**
-       * User is signed in. Fill user info.
-       * @param  {Object} profile Profile information object
-       * @return {Promise} Resolves when authentication succeeded.
+       * User is signed in
        */
       signedIn(res) {
-        console.log(res, res.body);
         window._loggedIn = this.loggedIn = res.status === 200;
         if (this.loggedIn) {
           window.dispatchEvent(new CustomEvent('logged-in', {
@@ -400,6 +379,11 @@
         }
       }
 
+      /**
+       * [notSignedIn description]
+       * @param  {[type]} err [description]
+       * @return {[type]}     [description]
+       */
       notSignedIn(err) {
         let status = '';
 
@@ -410,6 +394,7 @@
         }));
 
         if (this.loggedIn || window._loggedIn) {
+          // reset inputs
           const usernameInput = this.root.querySelector('#username');
           const passwordInput = this.root.querySelector('#password');
           if (usernameInput) {
@@ -429,15 +414,14 @@
             status = 'Unknown Error occured';
           }
         }
-        console.warn('not signed in:', status ||'', err || (err && err.statusCode) || '');
+        console.warn('not signed in:', status || '', err || (err && err.statusCode) || '');
         this.dispatchEvent(new CustomEvent('announce', {
           detail: status ? status : '',
           bubbles: true,
           composed: true
         }));
 
-        this.loggedIn = false;
-        window._loggedIn = false;
+        window._loggedIn = this.loggedIn = false;
         if (!this.offline) {
           this.open();
         }
@@ -455,6 +439,7 @@
         this.$.dialog.open();
         this.opened = true;
       }
+
       close() {
         this.$.dialog.close();
         this.opened = false;
