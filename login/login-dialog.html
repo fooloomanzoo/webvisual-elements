@@ -274,7 +274,7 @@
             }
           })
           .catch(err => {
-            if (err) console.log(err);
+            if (err) console.log('autoSignIn Error:', err);
             this.dispatchEvent(new CustomEvent('announce', {
               detail: this.localize ? this.localize('notification', 'loggedIn', false) : 'You are not signed in',
               bubbles: true,
