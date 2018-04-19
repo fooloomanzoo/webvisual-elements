@@ -1,6 +1,7 @@
 <link rel="import" href="../../bower_components/polymer/polymer-element.html">
 <link rel="import" href="../../bower_components/paper-ripple/paper-ripple.html">
 <link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../../bower_components/iron-form/iron-form.html">
 <link rel="import" href="../mixins/localize-mixin.html">
 <link rel="import" href="../components/icon-button.html">
 <link rel="import" href="../components/dialog-element.html">
@@ -76,13 +77,13 @@
     </style>
 
     <dialog-element id="dialog">
-      <template is="dom-if" if="[[!loggedIn]]">
-        <div dialog-title id="loginInfo">
-          <div>{{localize('login', 'name')}}</div>
-          <div>{{localize('login', 'title')}}</div>
-        </div>
-
-        <form dialog-content id="signinform" on-submit="onSubmit" method="POST" action="[[signInUrl]]">
+      <!-- <template is="dom-if" if="[[!loggedIn]]"> -->
+      <iron-form id="signinform" on-iron-form-presubmit="onPreSubmit">
+        <form dialog-content method="POST" action="[[signInUrl]]">
+          <div dialog-title id="loginInfo">
+            <div>{{localize('login', 'name')}}</div>
+            <div>{{localize('login', 'title')}}</div>
+          </div>
           <section class="input">
             <iron-icon class="left" icon="person-add"></iron-icon>
             <input id="username" autocomplete="username" name="username" type="text" pattern=".{1,32}\..{1,32}" autocorrect="off" autocapitalize="off" spellcheck="off" placeholder$="{{localize('login', 'username')}}" required>
@@ -110,11 +111,12 @@
             <div class="button">
               <paper-ripple></paper-ripple>
               <iron-icon class="left" icon="juelich:logo"></iron-icon>
-              <input type="submit" value$="{{localize('login', 'confirm')}}"/>
+              <input type="submit" on-click="submit" value$="{{localize('login', 'confirm')}}"/>
             </div>
           </div>
         </form>
-      </template>
+      </iron-form>
+      <!-- </template> -->
 
       <template is="dom-if" if="[[loggedIn]]">
         <div dialog-title>
@@ -302,8 +304,8 @@
        */
       onSubmit(e) {
         e.preventDefault();
-        console.log(this, e);
-        const regForm = e.target || (e.path || e.path[0]);
+        console.log(e, this);
+        const regForm = this.root.querySelector('#signinform');
 
         if (regForm.validate && !regForm.validate()) return;
 
@@ -314,7 +316,7 @@
         console.log(regForm, username, password);
 
         // Sign-In
-        this.signIn(this.signInUrl, 'include', regFormData)
+        this.signIn(this.signInUrl, 'include', regForm)
           .then(res => {
             console.log(res, regFormData, username, password);
             this.dispatchEvent(new CustomEvent('announce', {
@@ -326,13 +328,57 @@
               let form = new FormData();
               form.append('username', username);
               form.append('password', password);
-              const cred = new PasswordCredential(form);
+              const cred = new PasswordCredential(regForm);
               return navigator.credentials.store(cred)
                 .then(() => {
                   console.info('credentials are stored');
                 })
             }
           })
+      }
+      /*
+       * When password sign-in button is pressed.
+       * @return {void}
+       */
+      onPreSubmit(e) {
+        e.preventDefault();
+        console.log(e, this);
+        const regForm = this.root.querySelector('#signinform');
+
+        if (regForm.validate && !regForm.validate()) return;
+
+        const regFormData = new FormData(regForm._form);
+
+        const username = regFormData.get('username');
+        const password = regFormData.get('password');
+        console.log(regForm, regFormData, username, password);
+
+        // Sign-In
+        this.signIn(this.signInUrl, 'include', regFormData)
+          .then(res => {
+            console.log(res);
+            this.dispatchEvent(new CustomEvent('announce', {
+              detail: this.localize ? this.localize('notification', 'loggedIn', true) : 'You are signed in',
+              bubbles: true,
+              composed: true
+            }));
+            if (window.PasswordCredential) {
+              const cred = new PasswordCredential({
+                id: username,
+                password: username
+              });
+              return navigator.credentials.store(cred)
+                .then(() => {
+                  console.info('credentials are stored');
+                })
+            }
+          })
+      }
+
+      submit(e) {
+        e.preventDefault();
+        console.log(this.$.signinform);
+        this.$.signinform.submit();
       }
 
       onReset() {
