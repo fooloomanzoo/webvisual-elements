@@ -3,6 +3,10 @@
 <link rel="import" href="../../../bower_components/paper-ripple/paper-ripple.html">
 <link rel="import" href="../../../bower_components/iron-icon/iron-icon.html">
 
+<link rel="import" href="../../../bower_components/number-input/number-input.html">
+<link rel="import" href="../../../bower_components/number-input/integer-input.html">
+<link rel="import" href="../../../bower_components/color-picker/overlay-color-picker.html">
+
 <link rel="import" href="../../mixins/localize-mixin.html">
 
 <link rel="import" href="../../components/icon-button.html">
@@ -99,13 +103,13 @@
             </div>
             <template is="dom-if" if="[[_nequals(exportFormat, 'svg')]]">
               <div class="input">
-                <input type="range" min="0" max="1" step="0.01" value="{{quality::input}}">
+                <input type="range" min="0" max="1" step="0.01" value="{{quality::input}}"><number-input number-style="percent" min="0" max="1" step="0.01" value="{{quality}}"></number-input>
                 <div class="decorator" error-message$=">= 0">
                   <label>[[localize('chart', 'quality')]]</label>
                 </div>
               </div>
               <div class="input">
-                <input type="number" min="72" step="1" value="{{resolution::input}}">
+                <integer-input min="72" default="72" step="1" unit="dpi" value="{{resolution}}"></integer-input>
                 <div class="decorator" error-message$=">= 0">
                   <label>[[localize('chart', 'resolution')]]</label>
                   <div class="underline"></div>
@@ -113,36 +117,36 @@
               </div>
             </template>
             <div class="input">
-              <input type="number" min="0" step="1" value="{{height::input}}">
+              <input-input min="50" step="1" value="{{height}}"></integer-input>
               <div class="decorator" error-message$=">= 0">
                 <label>[[localize('chart', 'height')]]</label>
                 <div class="underline"></div>
               </div>
             </div>
             <div class="input">
-              <input type="number" min="0" step="1" value="{{width::input}}">
+              <integer-input min="50" step="1" value="{{width}}"></integer-input>
               <div class="decorator" error-message$=">= 0">
                 <label>[[localize('chart', 'width')]]</label>
                 <div class="underline"></div>
               </div>
             </div>
             <div class="input">
-              <input type="number" min="1" step="1" value="{{fontSize::input}}">
+              <integer-input min="1" default="11" step="1" unit="pt" value="{{fontSize}}"></integer-input>
               <div class="decorator" error-message$=">= 0">
                 <label>[[localize('chart', 'font-size')]]</label>
                 <div class="underline"></div>
               </div>
             </div>
             <div class="input">
-              <input type="color" value="{{fontColor::input}}">
+              <overlay-color-picker value="{{fontColor::input}}" default="#111"></overlay-color-picker>
               <label>[[localize('chart', 'font-color')]]</label>
             </div>
             <div class="input">
-              <input type="color" value="{{backgroundColor::input}}">
+              <overlay-color-picker value="{{backgroundColor::input}}" default="#FFF" no-overlap></overlay-color-picker>
               <label>[[localize('chart', 'background-color')]]</label>
             </div>
             <div class="input">
-              <input type="color" value="{{lineColor::input}}">
+              <overlay-color-picker value="{{lineColor::input}}" default="#111" no-overlap></overlay-color-picker>
               <label>[[localize('chart', 'line-color')]]</label>
             </div>
           </div>
