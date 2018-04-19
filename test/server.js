@@ -125,6 +125,7 @@ app.use('/logout', (req, res) => {
 })
 
 // Static Data
+// app.use('/bower_components', serveStatic( path.join(htmlPublic, 'bower_components')));
 app.use(serveStatic( htmlPublic, { index: ['index.html'] }));
 app.use(serveStatic( cwd, { index: false }));
 
