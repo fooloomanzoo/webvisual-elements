@@ -27,8 +27,22 @@
           offline: {
             type: Boolean,
             notify: true
+          },
+
+          signInUrl: {
+            type: String,
+            value: '/login'
+          },
+
+          signOutUrl: {
+            type: String,
+            value: '/logout'
           }
         }
+      }
+
+      static get observers() {
+        '_signInOutUrlsChanged(signInUrl, signOutUrl)'
       }
 
       connectedCallback() {
@@ -45,6 +59,11 @@
         window.removeEventListener('online', this._load);
         window.removeEventListener('offline', this._load);
         window.removeEventListener('logged-in', this._load);
+      }
+
+      _signInOutUrlsChanged(signInUrl, signOutUrl) {
+        window.WebvisualLoginDialog.signInUrl = signInUrl || '/login';
+        window.WebvisualLoginDialog.signOutUrl = signOutUrl || '/logout';
       }
 
       _load() {
