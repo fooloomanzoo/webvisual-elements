@@ -19,6 +19,7 @@
     "iron-icon": "PolymerElements/iron-icon",
     "iron-icons": "PolymerElements/iron-icons",
     "iron-list": "PolymerElements/iron-list",
+    "iron-collapse": "PolymerElements/iron-collapse",
     "paper-ripple": "PolymerElements/paper-ripple",
     "paper-behaviors": "PolymerElements/paper-behaviors",
     "paper-dialog-behavior": "PolymerElements/paper-dialog-behavior",
