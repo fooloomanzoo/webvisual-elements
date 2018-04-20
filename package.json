@@ -1,6 +1,6 @@
 {
   "name": "webvisual-elements",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "webcomponents for webvisual-server",
   "main": "index.js",
   "scripts": {
