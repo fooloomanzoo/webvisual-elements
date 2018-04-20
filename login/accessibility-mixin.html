@@ -1,10 +1,6 @@
 <link rel="import" href="login-dialog.html">
 
 <script>
-  if (!window.WebvisualLoginDialog) {
-    window.WebvisualLoginDialog = document.createElement('login-dialog');
-    document.body.appendChild(window.WebvisualLoginDialog);
-  }
 
   window.WebvisualMixins = window.WebvisualMixins || {};
   /**
@@ -21,11 +17,13 @@
         return {
           loggedIn: {
             type: Boolean,
+            value: Boolean(window._loggedIn),
             notify: true
           },
 
           offline: {
             type: Boolean,
+            value: !Boolean(window.navigator.onLine),
             notify: true
           },
 
@@ -39,11 +37,26 @@
             value: '/logout'
           },
 
-          signOutUrl: {
+          authUrl: {
             type: String,
             value: '/auth'
           }
         }
+      }
+
+      ready() {
+        super.ready();
+        /**
+         * register one dialog at least for all elements
+         */
+        if (!window.WebvisualLoginDialog) {
+          window.WebvisualLoginDialog = document.createElement('login-dialog');
+          window.WebvisualLoginDialog.signInUrl = this.signInUrl || '/login';
+          window.WebvisualLoginDialog.signOutUrl = this.signOutUrl || '/logout';
+          window.WebvisualLoginDialog.authUrl = this.authUrl || '/auth';
+          document.body.appendChild(window.WebvisualLoginDialog);
+        }
+        this._loginDialog = window.WebvisualLoginDialog;
       }
 
       static get observers() {
@@ -56,6 +69,7 @@
         window.addEventListener('online', this._load);
         window.addEventListener('offline', this._load);
         window.addEventListener('logged-in', this._load);
+        this._load();
       }
 
       disconnectedCallback() {
@@ -66,25 +80,37 @@
       }
 
       _signInOutUrlsChanged(signInUrl, signOutUrl, authUrl) {
-        window.WebvisualLoginDialog.signInUrl = signInUrl || '/login';
-        window.WebvisualLoginDialog.signOutUrl = signOutUrl || '/logout';
-        window.WebvisualLoginDialog.authUrl = authUrl || '/auth';
+        if (!signInUrl || !signOutUrl || !authUrl) {
+          return;
+        }
+        /*
+         * if it is changing, create a new one just for this element
+         */
+        if (this._loginDialog.signInUrl !== signInUrl || this._loginDialog.signOutUrl !== signOutUrl || this._loginDialog.authUrl !== authUrl) {
+          this._loginDialog = document.createElement('login-dialog');
+          document.body.appendChild(this._loginDialog);
+          this._loginDialog.signInUrl = signInUrl || '/login';
+          this._loginDialog.signOutUrl = signOutUrl || '/logout';
+          this._loginDialog.authUrl = authUrl || '/auth';
+          document.body.appendChild(this._loginDialog);
+        }
       }
 
       /**
        * @overwrite
        */
-      _load() {
+      _load(e) {
         this.offline = !Boolean(window.navigator.onLine);
         this.loggedIn = Boolean(window._loggedIn);
+        super._load && super._load();
       }
 
       openLoginDialog() {
-        window.WebvisualLoginDialog.open();
+        this._loginDialog.open();
       }
 
       signOut() {
-        window.WebvisualLoginDialog.signOut();
+        this._loginDialog.signOut();
       }
     }
   }

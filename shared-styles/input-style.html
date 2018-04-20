@@ -1,58 +1,67 @@
-<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../polymer/polymer.html">
 
 <dom-module id="input-style">
   <template>
     <style>
       .input {
-        display: inline-block;
+        display: inline-flex;
         position: relative;
-        overflow: visible !important;
       }
-      .input > input::-webkit-input-placeholder {
-        color: transparent;
+      ::-webkit-input-placeholder {
+        color: rgba(0, 0, 0, 0);
       }
-      .input > input::-moz-placeholder {
-        color: transparent;
+      ::-moz-placeholder {
+        color: rgba(0, 0, 0, 0);
       }
-      .input > input:-ms-input-placeholder {
-        color: transparent;
+      ::-ms-input-placeholder {
+        color: rgba(0, 0, 0, 0);
       }
-      .input > input::-ms-input-placeholder {
-        color: transparent;
+      ::-ms-input-placeholder {
+        color: rgba(0, 0, 0, 0);
       }
-      .button > input[type],
-      .input > input:-webkit-autofill,
-      .input > input {
-        font-size: 1em;
+      input::selection {
+        background: rgba(255, 255, 255, 0.5);
+      }
+      input::-moz-selection {
+        background: rgba(255, 255, 255, 0.5);
+      }
+      .input input {
+        flex: 1;
+      }
+      input:not([type="range"]) {
+        font-size: inherit;
         font-weight: 400;
         font-family: inherit;
         box-sizing: content-box;
         color: var(--input-color, currentColor);
         background-color: var(--input-background, transparent);
-        border: none;
+        border: thin solid transparent;
         outline: none;
-        margin: 0;
+        padding: 1em 0.35em 0.25em;
+        overflow: visible !important;
       }
-      .button > input[type="text"],
-      .button > input[type="password"],
-      .button > input[type="number"],
-      .input > input[type="text"],
-      .input > input[type="password"],
-      .input > input[type="number"] {
-        padding: 0.25em 0.35em;
-        margin-top: 1em;
-      }
-      .input > input:invalid {
+      input:invalid {
         /* reset the default style in FF */
+        border: thin solid rgba(255, 0, 0, 0.1);
         box-shadow: none;
+        color: var(--input-color, currentColor);
+        background-color: var(--input-background, rgba(255, 0, 0, 0.1));
       }
-      .input > .decorator {
+      input:focus {
+        outline: none;
+        border: thin solid transparent;
+        color: var(--input-color, currentColor);
+        background-color: var(--input-background, transparent);
+      }
+      .input .decorator {
+        position: absolute;
         display: block;
         height: 1px;
-        width: 100%;
-        margin: auto;
+        top: auto;
+        bottom: -1px;
+        left: 0;
+        right: 0;
         border-top: 1px solid #ccc;
-        position: relative;
         -webkit-transform: translateZ(0);
         transform: translateZ(0);
       }
@@ -71,8 +80,9 @@
         transition: transform 0.2s ease-in;
       }
       /* input label */
-      .input > .decorator > label {
+      .input .decorator label {
         display: block;
+        font-size: 0.85em;
         font-weight: 300;
         pointer-events: none;
         opacity: 0.5;
@@ -87,19 +97,23 @@
         transition-duration: 0.15s;
         transition-timing-function: ease-out;
         will-change: transform;
-        -webkit-transform: translate3d(0px, -2em, 0px);
-        transform: translate3d(0px, -2em, 0px);
+        -webkit-transform: translate3d(0px, -2.25em, 0px);
+        transform: translate3d(0px, -2.25em, 0px);
       }
-      .input > [icon]:first-child {
+      .input [icon] {
+        flex: 0 0 auto;
+        align-self: flex-end;
+      }
+      .input [icon]:first-child {
         margin-left: 0;
         margin-right: 0.5em;
       }
-      .input > [icon]:last-child {
+      .input [icon]:last-child {
         margin-left: 0.5em;
         margin-right: 0;
       }
       /* Error message */
-      .input > .decorator::after {
+      .input .decorator::after {
         position: absolute;
         top: 0;
         left: 0;
@@ -110,65 +124,65 @@
         display: none;
         white-space: nowrap;
       }
-      .input > input:focus + .decorator > .underline {
+      .input input:focus + .decorator .underline {
         -webkit-transform: scale3d(1, 1, 1);
         transform: scale3d(1, 1, 1);
         transition: -webkit-transform 0.2s ease-out;
         transition: transform 0.2s ease-out;
       }
       /* Label: valid state */
-      .input > input:focus + .decorator > label {
-        -webkit-transform: translate3d(0px, -2.5em, 0px) scale(0.75, 0.75);
-        transform: translate3d(0px, -2.5em, 0px) scale(0.75, 0.75);
+      .input input:focus + .decorator label {
+        -webkit-transform: translate3d(0px, -3.1em, 0px) scale(0.9, 0.9);
+        transform: translate3d(0px, -3.1em, 0px) scale(0.9, 0.9);
         opacity: 1;
       }
-      .input > input:not(:placeholder-shown) + .decorator > label {
-        -webkit-transform: translate3d(0px, -2.5em, 0px) scale(0.75, 0.75);
-        transform: translate3d(0px, -2.5em, 0px) scale(0.75, 0.75);
+      .input input:not(:placeholder-shown) + .decorator label {
+        -webkit-transform: translate3d(0px, -3.1em, 0px) scale(0.9, 0.9);
+        transform: translate3d(0px, -3.1em, 0px) scale(0.9, 0.9);
         opacity: 1;
       }
-      _:-ms-lang(x), .input > input + .decorator > label {
-        -webkit-transform: translate3d(0px, -2.5em, 0px) scale(0.75, 0.75);
-        transform: translate3d(0px, -2.5em, 0px) scale(0.75, 0.75);
+      _:-ms-lang(x), .input input + .decorator label {
+        -webkit-transform: translate3d(0px, -3.1em, 0px) scale(0.9, 0.9);
+        transform: translate3d(0px, -3.1em, 0px) scale(0.9, 0.9);
         opacity: 1;
       }
-      .input > input:optional:-moz-ui-valid + .decorator > label {
-        -webkit-transform: translate3d(0px, -2.5em, 0px) scale(0.75, 0.75);
-        transform: translate3d(0px, -2.5em, 0px) scale(0.75, 0.75);
+      .input input:optional:-moz-ui-valid + .decorator label {
+        -webkit-transform: translate3d(0px, -3.1em, 0px) scale(0.9, 0.9);
+        transform: translate3d(0px, -3.1em, 0px) scale(0.9, 0.9);
         opacity: 1;
       }
       /* Range */
-      .input > input[type="range"]:focus + .decorator > label {
-        -webkit-transform: translate3d(0px, -3.2em, 0px) scale(0.75, 0.75);
-        transform: translate3d(0px, -3.2em, 0px) scale(0.75, 0.75);
+      .input input[type="range"]:focus + .decorator label {
+        -webkit-transform: translate3d(0px, -3.2em, 0px) scale(0.9, 0.9);
+        transform: translate3d(0px, -3.2em, 0px) scale(0.9, 0.9);
         opacity: 1;
       }
-      .input > input[type="range"]:not(:placeholder-shown) + .decorator > label {
-        -webkit-transform: translate3d(0px, -3.2em, 0px) scale(0.75, 0.75);
-        transform: translate3d(0px, -3.2em, 0px) scale(0.75, 0.75);
+      .input input[type="range"]:not(:placeholder-shown) + .decorator label {
+        -webkit-transform: translate3d(0px, -3.2em, 0px) scale(0.9, 0.9);
+        transform: translate3d(0px, -3.2em, 0px) scale(0.9, 0.9);
         opacity: 1;
       }
-      .input > input[type="range"] + .decorator > label {
-        -webkit-transform: translate3d(0px, -3.2em, 0px) scale(0.75, 0.75);
-        transform: translate3d(0px, -3.2em, 0px) scale(0.75, 0.75);
+      .input input[type="range"] + .decorator label {
+        -webkit-transform: translate3d(0px, -3.2em, 0px) scale(0.9, 0.9);
+        transform: translate3d(0px, -3.2em, 0px) scale(0.9, 0.9);
         opacity: 1;
       }
       /* Underline */
-      .input > input:not(:focus):not(:placeholder-shown):invalid + .decorator > .underline {
+      .input input:not(:focus):not(:placeholder-shown):invalid + .decorator .underline {
         background-color: var(--input-invalid, #dd2c00);
         -webkit-transform: scale3d(1, 1, 1);
         transform: scale3d(1, 1, 1);
         transition: -webkit-transform 0.2s ease-out;
         transition: transform 0.2s ease-out;
       }
-      .input > input:not(:focus):-moz-ui-invalid:invalid + .decorator > .underline {
+      /* .input input:not(:focus):-moz-ui-invalid:invalid + .decorator .underline {
         background-color: var(--input-invalid, #dd2c00);
         -webkit-transform: scale3d(1, 1, 1);
         transform: scale3d(1, 1, 1);
         transition: -webkit-transform 0.2s ease-out;
         transition: transform 0.2s ease-out;
-      }
-      .input > input[aria-invalid='true']:not(:valid) + .decorator > .underline {
+      } */
+      .input input[aria-invalid='true']:not(:valid) + .decorator .underline {
         background-color: var(--input-invalid, #dd2c00);
         -webkit-transform: scale3d(1, 1, 1);
         transform: scale3d(1, 1, 1);
@@ -176,63 +190,45 @@
         transition: transform 0.2s ease-out;
       }
       /* Error message */
-      .input > input:not(:focus):not(:placeholder-shown):invalid + .decorator::after {
+      .input input:not(:focus):not(:placeholder-shown):invalid + .decorator::after {
         display: block;
       }
-      .input > input:not(:focus):-moz-ui-invalid:invalid + .decorator::after {
+      .input input:not(:focus):-moz-ui-invalid:invalid + .decorator::after {
         display: block;
       }
-      .input > input[aria-invalid='true']:not(:valid) + .decorator::after {
+      .input input[aria-invalid='true']:not(:valid) + .decorator::after {
         display: block;
       }
       /* Error label */
-      .input > input:not(:focus):not(:placeholder-shown):invalid + .decorator > label {
-        -webkit-transform: translate3d(0px, -2.5em, 0px) scale(0.75, 0.75);
-        transform: translate3d(0px, -2.5em, 0px) scale(0.75, 0.75);
+      .input input:not(:focus):not(:placeholder-shown):invalid + .decorator label {
+        -webkit-transform: translate3d(0px, -3.1em, 0px) scale(0.9, 0.9);
+        transform: translate3d(0px, -3.1em, 0px) scale(0.9, 0.9);
         opacity: 1;
         color: var(--input-invalid, #dd2c00);
       }
-      .input > input:not(:focus):-moz-ui-invalid:invalid + .decorator > label {
-        -webkit-transform: translate3d(0px, -2.5em, 0px) scale(0.75, 0.75);
-        transform: translate3d(0px, -2.5em, 0px) scale(0.75, 0.75);
+      .input input:not(:focus):-moz-ui-invalid:invalid + .decorator label {
+        -webkit-transform: translate3d(0px, -3.1em, 0px) scale(0.9, 0.9);
+        transform: translate3d(0px, -3.1em, 0px) scale(0.9, 0.9);
         opacity: 1;
         color: var(--input-invalid, #dd2c00);
       }
-      .input > input[aria-invalid='true']:not(:valid) + .decorator > label {
-        -webkit-transform: translate3d(0px, -2.5em, 0px) scale(0.75, 0.75);
-        transform: translate3d(0px, -2.5em, 0px) scale(0.75, 0.75);
+      .input input[aria-invalid='true']:not(:valid) + .decorator label {
+        -webkit-transform: translate3d(0px, -3.1em, 0px) scale(0.9, 0.9);
+        transform: translate3d(0px, -3.1em, 0px) scale(0.9, 0.9);
         opacity: 1;
         color: var(--input-invalid, #dd2c00);
       }
       /* Valid label */
-      .input > input:not(:focus):required:valid + .decorator > label {
-        -webkit-transform: translate3d(0px, -2.5em, 0px) scale(0.75, 0.75);
-        transform: translate3d(0px, -2.5em, 0px) scale(0.75, 0.75);
+      .input input:not(:focus):required:valid + .decorator label {
+        -webkit-transform: translate3d(0px, -3.1em, 0px) scale(0.9, 0.9);
+        transform: translate3d(0px, -3.1em, 0px) scale(0.9, 0.9);
         opacity: 1;
       }
-      .input > input[type="color"] {
-        height: 1.5em;
-        width: 1.5em;
-        padding: 0.5em;
-        box-sizing: content-box;
-        cursor: pointer;
-        margin: 0;
-      }
-      .input > input[type="range"] {
+      .input input[type="range"] {
         width: 100%;
         box-sizing: content-box;
         cursor: pointer;
-        margin-top: 0.75em;
-      }
-      .input > input[type="color"] + .decorator ,
-      .input > input[type="range"] + .decorator {
-        border-top: none;
-      }
-      .input > input[type="color"]::-webkit-color-swatch-wrapper {
-        padding: 0;
-      }
-      .input > input[type="color"]::-webkit-color-swatch {
-        border-radius: 50%;
+        margin-top: 0.8em;
       }
     </style>
   </template>

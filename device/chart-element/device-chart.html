@@ -1,7 +1,7 @@
 <script src="../../scripts/d3.bundle.js" type="text/javascript"></script>
 
-<link rel="import" href="../../../bower_components/polymer/polymer-element.html">
-<link rel="import" href="../../../bower_components/iron-resizable-behavior/iron-resizable-behavior.html">
+<link rel="import" href="../../../polymer/polymer-element.html">
+<link rel="import" href="../../../iron-resizable-behavior/iron-resizable-behavior.html">
 
 <link rel="import" href="../../mixins/fullscreen-mixin.html">
 <link rel="import" href="../../mixins/localize-mixin.html">
@@ -14,7 +14,7 @@
 
 <link rel="import" href="axes-mixin.html">
 <link rel="import" href="device-graph.html">
-<link rel="import" href="dialog-chart-export.html">
+<link rel="import" href="device-chart-dialog-export.html">
 
 <dom-module id="device-chart">
   <template strip-whitespace>
@@ -1587,8 +1587,7 @@
           this.exitFullscreen();
         }
         if (!window._exportChartDialog) {
-          const DialogChartExport = customElements.get('dialog-chart-export');
-          window._exportChartDialog = new DialogChartExport(this);
+          window._exportChartDialog = new WebvisualElements.DeviceChartDialogExport(this);
           document.body.appendChild(window._exportChartDialog);
         } else {
           window._exportChartDialog.setChartElement(this);

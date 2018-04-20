@@ -1,7 +1,7 @@
-<link rel="import" href="../../bower_components/polymer/polymer-element.html">
-<link rel="import" href="../../bower_components/polymer/polymer-element.html">
-<link rel="import" href="../../bower_components/iron-pages/iron-pages.html">
-<link rel="import" href="../../bower_components/iron-selector/iron-selector.html">
+<link rel="import" href="../../polymer/polymer-element.html">
+<link rel="import" href="../../polymer/polymer-element.html">
+<link rel="import" href="../../iron-pages/iron-pages.html">
+<link rel="import" href="../../iron-selector/iron-selector.html">
 
 <link rel="import" href="../shared-styles/control-style.html">
 <link rel="import" href="../components/icon-button.html">
@@ -10,30 +10,30 @@
 <link rel="import" href="svg-element/device-svg.html">
 <link rel="import" href="container-mixin.html">
 
-<dom-module id='group-card'>
+<dom-module id='device-group-card'>
   <template strip-whitespace>
     <style include="control-style">
       :host {
         display: block;
         position: relative;
         -webkit-touch-callout: none; -webkit-tap-highlight-color:rgba(0,0,0,0);
-        background: var(--group-card-background, #ebebeb);
-        --group-card-header-height: 3em;
+        background: var(--device-group-card-background, #ebebeb);
+        --device-group-card-header-height: 3em;
       }
       #header {
         @apply --layout-fit;
         -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;
-        height: var(--group-card-header-height);
+        height: var(--device-group-card-header-height);
         border-top-left-radius: inherit;
         border-top-right-radius: inherit;
-        color: var(--group-card-header-color, var(--bright-text-color));
+        color: var(--device-group-card-header-color, var(--bright-text-color));
         transition-property: color;
         transition-duration: 500ms;
         transition-timing-function: cubic-bezier(0.6,0,0.2,1);
       }
       #header.opened {
         height: calc(15vh + 120px);
-        color: var(--group-card-header-opened-color, --primary-text-color);
+        color: var(--device-group-card-header-opened-color, --primary-text-color);
       }
       #title {
         @apply --layout-fit;
@@ -42,7 +42,7 @@
         @apply --layout-justified;
         bottom: auto;
         pointer-events: none;
-        height: var(--group-card-header-height);
+        height: var(--device-group-card-header-height);
         width: 100%;
         mix-blend-mode: exclusion;
       }
@@ -78,7 +78,7 @@
       }
       #headerBackground {
         position: relative;
-        min-height: var(--group-card-header-height);
+        min-height: var(--device-group-card-header-height);
         box-sizing: border-box;
         width: 100%;
         border-top-left-radius: inherit;
@@ -86,9 +86,9 @@
         border-bottom-style: solid;
         border-bottom-width: thin;
         border-color: transparent;
-        color: var(--group-card-header-color, var(--bright-text-color));
-        background-color: var(--group-card-header-background, var(--bright-primary-color));
-        padding-top: var(--group-card-header-height);
+        color: var(--device-group-card-header-color, var(--bright-text-color));
+        background-color: var(--device-group-card-header-background, var(--bright-primary-color));
+        padding-top: var(--device-group-card-header-height);
         transition-property: padding-top, background-color, border-color;
         transition-duration: 500ms;
         transition-timing-function: cubic-bezier(0.6,0,0.2,1);
@@ -96,9 +96,9 @@
       #headerBackground.opened {
         bottom: 0;
         padding-top: calc(15vh + 120px);
-        color: var(--group-card-header-opened-color, var(--bright-text-color));
-        background-color: var(--group-card-header-opened-background, tranparent);
-        border-color: var(--group-card-header-border, currentColor);
+        color: var(--device-group-card-header-opened-color, var(--bright-text-color));
+        background-color: var(--device-group-card-header-opened-background, tranparent);
+        border-color: var(--device-group-card-header-border, currentColor);
       }
       #headerBackground:not(.opened)::before {
         @apply --layout-fit;
@@ -106,7 +106,7 @@
         border-top-left-radius: inherit;
         border-top-right-radius: inherit;
         pointer-events: none;
-        background: var(--group-card-header-shim);
+        background: var(--device-group-card-header-shim);
       }
       ::slotted(*) {
         pointer-events: auto;
@@ -151,7 +151,7 @@
         opacity: 1;
       }
       device-table-group[opened] {
-        margin-top: calc(var(--group-card-header-height) - 0.1em);
+        margin-top: calc(var(--device-group-card-header-height) - 0.1em);
         margin-left: 0;
         margin-bottom: calc(var(--control-icon-size-fine, var(--icon-size)) + 2*var(--control-icon-padding-fine, var(--icon-padding)));
         margin-right: 0;
@@ -161,7 +161,7 @@
         --options-scrim-background: transparent;
       }
       device-chart[opened] {
-        margin-top: calc(var(--group-card-header-height) - 0.1em);
+        margin-top: calc(var(--device-group-card-header-height) - 0.1em);
         padding-bottom: calc(var(--control-icon-size-fine, var(--icon-size)) + 2*var(--control-icon-padding-fine, var(--icon-padding)));
       }
       @media (-moz-touch-enabled: 1), (pointer: coarse) { /* touch */
@@ -229,7 +229,7 @@
     class GroupCard extends WebvisualMixins.ContainerMixin(Polymer.Element) {
 
       static get is() {
-        return 'group-card';
+        return 'device-group-card';
       }
 
       static get properties() {

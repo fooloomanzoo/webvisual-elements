@@ -1,4 +1,4 @@
-<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../polymer/polymer-element.html">
 <link rel="import" href="device-mixin.html">
 <link rel="import" href="../mixins/color-mixin.html">
 <link rel="import" href="../mixins/checked-and-select-mixin.html">
@@ -110,17 +110,17 @@
         height: 1em;
         width: 1em;
       }
-      #sign[bottom] {
+      svg#sign {
         display: none;
         position: absolute;
         left: 0;
-        bottom: 0;
+        top: 0;
       }
-      #sign:not([bottom]) {
+      svg#sign:not([additional]) {
         height: 1.5em;
         width: 1.5em;
       }
-      :host([state="1"]) #sign, :host([state="-1"]) #sign {
+      :host([state="1"]) svg#sign, :host([state="-1"]) svg#sign {
         display: initial;
       }
       #ripple {
@@ -163,7 +163,7 @@
         <span id="unitSection">[[item.unit]]</span>
       </div>
 
-      <svg id="sign" bottom$="[[!item.isIndicatorLamp]]" aria-label="Alarm" viewBox="0 0 24 24">
+      <svg id="sign" additional$="[[!item.isIndicatorLamp]]" aria-label="Alarm" viewBox="0 0 24 24">
         <g><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></g>
       </svg>
     </div>
