@@ -28,7 +28,7 @@
       .input input {
         flex: 1;
       }
-      input:not([type="range"]) {
+      input {        
         font-size: inherit;
         font-weight: 400;
         font-family: inherit;
@@ -37,8 +37,11 @@
         background-color: var(--input-background, transparent);
         border: thin solid transparent;
         outline: none;
+      }
+      input:not([type="reset"]),
+      input:not([type="submit"]),
+      input:not([type="range"]) {
         padding: 1em 0.35em 0.25em;
-        overflow: visible !important;
       }
       input:invalid {
         /* reset the default style in FF */

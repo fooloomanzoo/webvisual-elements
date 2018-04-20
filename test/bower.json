@@ -20,6 +20,7 @@
     "iron-icons": "PolymerElements/iron-icons",
     "iron-list": "PolymerElements/iron-list",
     "paper-ripple": "PolymerElements/paper-ripple",
+    "paper-behaviors": "PolymerElements/paper-behaviors",
     "paper-dialog-behavior": "PolymerElements/paper-dialog-behavior",
     "datetime-picker": "fooloomanzoo/datetime-picker#2",
     "color-picker": "fooloomanzoo/color-picker#2",
