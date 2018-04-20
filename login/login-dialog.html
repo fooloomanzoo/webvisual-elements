@@ -62,6 +62,9 @@
       .button {
         padding: 0.75em 0.5em;
       }
+      .button > input {
+        padding: 0;
+      }
       .button > .left {
         margin-right: 0.5em;
       }
@@ -283,9 +286,16 @@
         // const regFormData = new FormData(regForm._form);
         const regFormData = new FormData(regForm);
 
-        const password = regFormData.get('password');
-        const username = regFormData.get('username');
-        const id = regFormData.get('id') || username;
+        let pasword, username, id;
+        if (regFormData.get) {
+          password = regFormData.get('password');
+          username = regFormData.get('username');
+          id = regFormData.get('id') || username;
+        } else {
+          password = this.$.password.value;
+          username = this.$.username.value;
+          id = (this.$.id && this.$.id.value) || username;
+        }
 
         // Sign-In
         this.signIn(this.signInUrl, 'include', regFormData)

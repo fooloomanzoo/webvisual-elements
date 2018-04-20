@@ -13,19 +13,18 @@
 <link rel="import" href="../../components/dialog-element.html">
 <link rel="import" href="../../components/drawer-element.html">
 
-<link rel="import" href="../../shared-styles/input-style.html">
 <link rel="import" href="../../shared-styles/button-style.html">
 <link rel="import" href="../../shared-styles/selectbox-style.html">
+<link rel="import" href="../../shared-styles/dialog-style.html">
 
 <dom-module id="device-chart-dialog-export">
   <template strip-whitespace>
-    <style include="input-style button-style selectbox-style">
-      :host {
+    <style include="dialog-style button-style selectbox-style">
+      :host(:focus) {
         outline: none;
       }
       #dialog {
         border-radius: 0;
-        padding: 0;
         width: 100%;
         height: 100%;
       }
@@ -34,12 +33,15 @@
         position: relative;
         box-sizing: border-box;
         margin: 0;
-        padding: 8px;
+        padding: 12px;
         flex: 1 1 auto;
         overflow: auto;
       }
       #chartContainer > * {
         color: inherit;
+        font-family: inherit;
+        height: 100%;
+        width: 100%;
       }
       #chartContainer > device-chart {
         margin: 0;
@@ -63,29 +65,41 @@
         display: flex;
         flex-direction: column;
         height: 100%;
-        padding: 0.75em;
+        padding: 0.75em 0;
         overflow-x: hidden;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
       }
-      .options-content > * {
+      .option,
+      .option.selectbox {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        background: rgba(255,255,255,0.5);
+        padding: 0.5em;
         margin-top: 0;
-        margin-bottom: 0.5em;
+        margin-bottom: 0.75em;
         text-align: left;
         word-break: break-all;
         flex-shrink: 0;
         position: relative;
-        font-size: 0.8em;
+        font-size: 0.85em;
       }
-      .input {
-        background: rgba(255,255,255,0.5);
+      .option.selectbox select {
+        margin: 0 !important;
+      }
+      integer-input {
+        min-width: 100%;
+        justify-content: flex-start;
+        --input-padding: 0.5em;
+        --input-align: start;
       }
       [hidden] {
         display: none !important;
       }
     </style>
 
-    <dialog-element id="dialog" on-iron-overlay-opened="_setDimensions">
+    <dialog-element id="dialog" on-iron-overlay-opened="_setDimensions" class="content">
       <div dialog-title>
         <div>[[localize('chart', 'export')]]</div>
       </div>
@@ -93,61 +107,49 @@
         <div id="chartContainer"></div>
         <drawer-element id="options" opened$="{{styleOptionsOpened}}" scrim stretch align="right">
           <div class="options-content">
-            <div class="selectbox">
+            <div class="selectbox option">
+              <label>[[localize('chart', 'export-format')]]</label>
               <select value="{{exportFormat::change}}">
                 <option value="svg">.svg</option>
                 <option value="png">.png</option>
                 <option value="jpg">.jpg</option>
               </select>
-              <span>[[localize('chart', 'export-format')]]</span>
             </div>
             <template is="dom-if" if="[[_nequals(exportFormat, 'svg')]]">
-              <div class="input">
+              <div class="option">
                 <input type="range" min="0" max="1" step="0.01" value="{{quality::input}}"><number-input number-style="percent" min="0" max="1" step="0.01" value="{{quality}}"></number-input>
                 <div class="decorator" error-message$=">= 0">
                   <label>[[localize('chart', 'quality')]]</label>
                 </div>
               </div>
-              <div class="input">
+              <div class="option">
+                <label>[[localize('chart', 'resolution')]]</label>
                 <integer-input min="72" default="72" step="1" unit="dpi" value="{{resolution}}"></integer-input>
-                <div class="decorator" error-message$=">= 0">
-                  <label>[[localize('chart', 'resolution')]]</label>
-                  <div class="underline"></div>
-                </div>
               </div>
             </template>
-            <div class="input">
-              <input-input min="50" step="1" value="{{height}}"></integer-input>
-              <div class="decorator" error-message$=">= 0">
-                <label>[[localize('chart', 'height')]]</label>
-                <div class="underline"></div>
-              </div>
+            <div class="option">
+              <label>[[localize('chart', 'height')]]</label>
+              <integer-input min="50" step="1" value="{{height}}"></integer-input>
             </div>
-            <div class="input">
+            <div class="option">
+              <label>[[localize('chart', 'width')]]</label>
               <integer-input min="50" step="1" value="{{width}}"></integer-input>
-              <div class="decorator" error-message$=">= 0">
-                <label>[[localize('chart', 'width')]]</label>
-                <div class="underline"></div>
-              </div>
             </div>
-            <div class="input">
+            <div class="option">
+              <label>[[localize('chart', 'font-size')]]</label>
               <integer-input min="1" default="11" step="1" unit="pt" value="{{fontSize}}"></integer-input>
-              <div class="decorator" error-message$=">= 0">
-                <label>[[localize('chart', 'font-size')]]</label>
-                <div class="underline"></div>
-              </div>
             </div>
-            <div class="input">
-              <overlay-color-picker value="{{fontColor::input}}" default="#111"></overlay-color-picker>
+            <div class="option">
               <label>[[localize('chart', 'font-color')]]</label>
+              <overlay-color-picker value="{{fontColor::input}}" default="#111"></overlay-color-picker>
             </div>
-            <div class="input">
-              <overlay-color-picker value="{{backgroundColor::input}}" default="#FFF" no-overlap></overlay-color-picker>
+            <div class="option">
               <label>[[localize('chart', 'background-color')]]</label>
+              <overlay-color-picker value="{{backgroundColor::input}}" default="#FFF" no-overlap no-tip></overlay-color-picker>
             </div>
-            <div class="input">
-              <overlay-color-picker value="{{lineColor::input}}" default="#111" no-overlap></overlay-color-picker>
+            <div class="option">
               <label>[[localize('chart', 'line-color')]]</label>
+              <overlay-color-picker value="{{lineColor::input}}" default="#111" no-overlap no-tip></overlay-color-picker>
             </div>
           </div>
         </drawer-element>
@@ -337,7 +339,7 @@
         }
         this._chart.style.height = height + 'px';
         this._chart.style.width = width + 'px';
-        this._chart.sizeLayout();
+        this._chart.sizeChanged();
       }
 
       fitInContainer() {
@@ -395,6 +397,10 @@
       open() {
         this.$.dialog.open();
         this.opened = true;
+        requestAnimationFrame(() => {
+          this.$.dialog.notifyResize();
+          this._chart.sizeChanged();
+        })
       }
 
       close() {

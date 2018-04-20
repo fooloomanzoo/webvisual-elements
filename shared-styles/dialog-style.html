@@ -12,10 +12,10 @@
       :host([opened]) {
         opacity: 1;
       }
-      .content {
+      dialog-element {
         @apply --layout-vertical;
-        @apply --layout-start;
-        padding: 2.75em 0.75em 0.75em 0.75em;
+        align-items: stretch;
+        font-family: inherit;
         margin: 0.75em;
         border-radius: 8px;
         box-shadow: var(--dialog-shadow, 0 8px 10px 1px rgba(0, 0, 0, 0.14), 0 3px 14px 2px rgba(0, 0, 0, 0.12), 0 5px 5px -3px rgba(0, 0, 0, 0.4));
@@ -27,32 +27,34 @@
         margin: 0;
       }
       [dialog-title] {
-        @apply --layout-vertical;
-        @apply --layout-center-center;
-        margin: 0em 0 1.5em 0;
+        @apply --layout-horizontal;
+        justify-content: center;
+        padding: 0 0.5em;
+        margin: 0.5em 0 1em 0;
         @apply --dialog-title;
         flex: 0 0 auto;
       }
       [dialog-title] > * {
-        font-size: 1.2em;
-        font-weight: 500;
+        font-size: 1.4em;
+        font-weight: 400;
       }
       [dialog-content] {
         flex: 1 1 auto;
         @apply --layout-vertical;
         overflow: auto;
+        width: 100%;
       }
       [dialog-content][horizontal] {
         @apply --layout-horizontal;
       }
       [dialog-bottom] {
         @apply --layout-horizontal;
-        align-self: stretch;
         justify-content: flex-end;
         font-size: 0.9em;
+        margin: 0.5em 0 0 0;
         padding: 0 0.5em;
         flex-wrap: wrap;
-        flex: 1 0 auto;
+        flex: 0 0 auto;
       }
       .button {
         margin-left: 0.5em;

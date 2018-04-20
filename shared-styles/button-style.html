@@ -26,17 +26,16 @@
         -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;
         border: none;
         border-color: var(--highlight-color);
-        background: linear-gradient(to bottom, rgba(255,255,255,0.04) 5%,rgba(255,255,255,0.10) 40%);
+        background: linear-gradient(to bottom, rgba(255,255,255,0.02) 5%,rgba(255,255,255,0.10) 40%);
         color: currentColor;
         cursor: pointer;
-        transition: background 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         letter-spacing: 0.2px;
         flex-shrink: 0;
         text-align: left;
         @apply --button;
       }
       .button > * {
-        -webkit-appearance: none;
+        -webkit-appearance: none; -moz-appearance: none; appearance: none;
         -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;
         margin: 0;
       }
@@ -45,10 +44,10 @@
         flex: 1;
         text-align: center;
       }
-      .button > button,
-      .button > button[type="submit"] {
+      .button > button {
         font-family: inherit;
         font-size: inherit;
+        cursor: pointer;
         background-color: transparent;
         color: currentColor;
         outline: none;
@@ -61,16 +60,26 @@
         cursor: auto;
         pointer-events: none;
       }
-      .button:hover {
-        background: linear-gradient(to bottom, rgba(255,255,255,0.06) 5%,rgba(255,255,255,0.15) 40%);
+      .button::before {
+        content: '';
+        position: absolute;
+        left: 0; right: 0; bottom: 0; top: 0;
+        background: currentColor;
+        opacity: 0.01;
+        transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        pointer-events: none;
+        border-radius: inherit;
+      }
+      .button:hover::before {
+        opacity: 0.1;
       }
       .button:focus,
       .button.iron-selected {
-        background: linear-gradient(to bottom, rgba(255,255,255,0.1) 5%,rgba(255,255,255,0.25) 40%);
         font-weight: 400;
       }
-      .button:focus {
-        border-width: medium;
+      .button:focus::before ,
+      .button.iron-selected::before  {
+        opacity: 0.15;
       }
       .button > iron-icon {
         color: currentColor;

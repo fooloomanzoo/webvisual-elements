@@ -1,22 +1,21 @@
 <link rel="import" href="../../polymer/polymer-element.html">
 <link rel="import" href="../../paper-dialog-behavior/paper-dialog-behavior.html">
 <link rel="import" href="../../iron-resizable-behavior/iron-resizable-behavior.html">
-<link rel="import" href="../shared-styles/dialog-style.html">
 <link rel="import" href="icon-button.html">
 
 <dom-module id="dialog-element">
   <template strip-whitespace>
-    <style include="dialog-style">
+    <style>
       :host {
-        outline: none;
-        --calculated-icon-size: var(--icon-size, 1.5em);
+        --calculated-icon-size: var(--icon-size, 1em);
         --calculated-icon-padding: var(--icon-padding, 0.5em);
+        padding-top: calc(var(--calculated-icon-size) + 2*var(--calculated-icon-padding) + 8px);
+        padding-left: calc(var(--calculated-icon-padding) + 4px);
+        padding-right: calc(var(--calculated-icon-padding) + 4px);
+        padding-bottom: calc(var(--calculated-icon-padding) + 4px);
       }
-      ::slotted([dialog-title]) {
-        line-height: var(--calculated-icon-size);
-        margin-top: calc(var(--calculated-icon-padding) + 4px);
-        margin-bottom: calc(var(--calculated-icon-padding) + 4px);
-        padding-right: calc(var(--calculated-icon-size) + 2*var(--calculated-icon-padding) + 4px);
+      :host(:focus) {
+        outline: none;
       }
       #exitButton {
         position: absolute;
@@ -24,9 +23,6 @@
         top: 4px;
         margin: 0;
         border-radius: 50%;
-      }
-      [hidden] {
-        display: none !important;
       }
     </style>
     <slot></slot>
