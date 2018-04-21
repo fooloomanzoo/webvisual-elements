@@ -337,25 +337,8 @@
           })
           .then(this.signedIn.bind(this))
           .then(profile => {
-            this.userProfile = profile;
-            // When auto sign-in didn't resolve with a profile
-            // it's failed to get credential information.
-            if (!(profile && profile.username)) {
-              window._loggedIn = this.loggedIn = false;
-              window.dispatchEvent(new CustomEvent('announce', {
-                detail: this.localize ? this.localize('notification', 'loggedIn', false) : 'You are not signed in',
-                bubbles: true,
-                composed: true
-              }));
-              this.open();
-            } else {
-              window.dispatchEvent(new CustomEvent('announce', {
-                detail: this.localize ? this.localize('notification', 'loggedIn', true) : 'You are signed in',
-                bubbles: true,
-                composed: true
-              }));
-              this.close();
-            }
+            console.log(`profile: ${profile}`);
+            this.userProfile = typeof profile === 'string' ? JSON.parse(profile) : profile || {};
           })
           .catch(err => {
             this.notSignedIn(err);
@@ -405,7 +388,7 @@
             bubbles: true,
             composed: true
           }));
-          return Promise.resolve(res.json());
+          return Promise.resolve(res && res.json && res.json());
         } else {
           console.info('signin failed');
           return Promise.reject(res);
