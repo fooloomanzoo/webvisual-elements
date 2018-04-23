@@ -16,6 +16,7 @@
     "url": "git+https://github.com/fooloomanzoo/webvisual-elements.git"
   },
   "devDependencies": {
+    "argparse": "*",
     "body-parser": "*",
     "connect-redis": "*",
     "cookie-parser": "*",

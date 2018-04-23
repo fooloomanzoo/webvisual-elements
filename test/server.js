@@ -11,11 +11,33 @@ const express = require('express'),
   spdy = require('spdy'),
   RedisStore = require('connect-redis')(session);
 
+const ArgumentParser = require('argparse').ArgumentParser;
+const parser = new ArgumentParser({
+  version: '0.0.1',
+  addHelp: true,
+  description: 'Webvisual Elements Tests'
+});
+parser.addArgument(
+  [ '-p', '--port' ],
+  {
+    help: 'port'
+  }
+);
+parser.addArgument(
+  [ '-h', '--hostname' ],
+  {
+    help: 'hostname'
+  }
+);
+
+const args = parser.parseArgs();
+
 // register passport dummy-stategy
 require('./passport-local-plugin.js')(passport);
 
 // setting the Port
-const port = +(process.env.PORT || '3000');
+const port = +(args.port || process.env.PORT || '3000');
+const hostname = args.hostname || 'localhost';
 // directories
 
 const cwd = process.cwd(),
@@ -179,7 +201,7 @@ io.use((socket, next) => {
 })
 
 // start the server
-server.listen(port);
+server.listen(port, hostname);
 
 function copy(origin, dest) {
   return new Promise( (resolve, reject) => {
