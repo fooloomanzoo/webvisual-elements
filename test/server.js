@@ -24,7 +24,7 @@ parser.addArgument(
   }
 );
 parser.addArgument(
-  [ '-h', '--hostname' ],
+  [ '-hn', '--hostname' ],
   {
     help: 'hostname'
   }
@@ -37,11 +37,11 @@ require('./passport-local-plugin.js')(passport);
 
 // setting the Port
 const port = +(args.port || process.env.PORT || '3000');
-const hostname = args.hostname || 'localhost';
+const hostname = args.hostname || '127.0.0.1';
 // directories
 
 const cwd = process.cwd(),
-  htmlPublic = path.resolve(cwd, 'test', 'html');
+  htmlPublic = path.resolve(__dirname, 'html');
 
 
 const ensureLoggedIn = {
@@ -77,10 +77,10 @@ const app = express(),
 
 // SSL settings
 const sslSettings = {};
-const passphrase = JSON.parse(fs.readFileSync(path.resolve(cwd, 'test', 'credentials/ca.pw.json'), 'utf8'));
+const passphrase = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'credentials/ca.pw.json'), 'utf8'));
 
-sslSettings.key = fs.readFileSync(path.resolve(cwd, 'test', 'credentials/ca.key'), 'utf8');
-sslSettings.cert = fs.readFileSync(path.resolve(cwd, 'test', 'credentials/ca.crt'), 'utf8');
+sslSettings.key = fs.readFileSync(path.resolve(__dirname, 'credentials/ca.key'), 'utf8');
+sslSettings.cert = fs.readFileSync(path.resolve(__dirname, 'credentials/ca.crt'), 'utf8');
 sslSettings.passphrase = passphrase.password || passphrase;
 sslSettings.rejectUnauthorized = false
 sslSettings.requestCert = true
@@ -166,7 +166,7 @@ server.on('error', err => {
     }
   })
   .once('listening', () => {
-    console.info( `HTTP2 Server is listening on port ${port}` )
+    console.info( `HTTP2 Server is listening on ${hostname}:${port}` )
   });
 
 // socket.io

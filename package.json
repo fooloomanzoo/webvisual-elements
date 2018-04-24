@@ -6,7 +6,7 @@
   "scripts": {
     "build": "rollup -c && uglifyjs scripts/d3.bundle.js -c -m -o scripts/d3.bundle.js && cd test && bower update -f",
     "publish": "git pull && npm run build && git add . && git commit -m \"publish new version\" && npm version patch && git push",
-    "test": "start https://localhost:3000 && node test/server.js"
+    "test": "start https://localhost:3000 && node test/server.js -p 3000 -h localhost"
   },
   "author": "fooloomanzoo",
   "license": "MIT",
