@@ -4,9 +4,8 @@
   "description": "webcomponents for webvisual-server",
   "main": "index.js",
   "scripts": {
-    "postinstall": "npm run build && cd test && bower update -f",
-    "build": "rollup -c && uglifyjs scripts/d3.bundle.js -c -m -o scripts/d3.bundle.js",
-    "prepublish": "git pull && npm run build && git add . && git commit -m \"publish new version\" && npm version patch && git push",
+    "build": "rollup -c && uglifyjs scripts/d3.bundle.js -c -m -o scripts/d3.bundle.js && cd test && bower update -f",
+    "publish": "git pull && npm run build && git add . && git commit -m \"publish new version\" && npm version patch && git push",
     "test": "start https://localhost:3000 && node test/server.js"
   },
   "author": "fooloomanzoo",
